@@ -6,11 +6,11 @@
     <meta charset=utf-8 />
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <!-- CSS libraries -->
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-    <link rel="stylesheet" href="//cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/themes/css/cartodb.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <link rel="stylesheet" href="css/pelias-leaflet-geocoder.css">
-    <link href='//fonts.googleapis.com/css?family=Open+Sans:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="css/normalize.css">
     <!-- style sheets -->
     <link href="css/style.css" rel="stylesheet" />
@@ -89,7 +89,7 @@
                 <div class="ind">
                     <span class="subtitle"> &nbsp; Industrial History Walking Tour</span>
                     <br />
-                    <button class="data-layer" type="button" id="industry" title="Industrial History Walking Tour">
+                    <button class="data-layer" type="button" id="industry" title="Industrial History Walking Tour (currently unavailable)" disabled>
                         <i class="fa fa-industry fa-2x"></i>
                     </button>
                 </div>
@@ -136,23 +136,26 @@
                 </p>
                 <h3>Future Flood Risk</h3>
                 <p>
-                    The New York Panel on Climate Change has projected what the flood plain will look like in a <strong>100-year and 500-year storm</strong> (a storm that typically occurs once every 100 and 500 years, respectively). This map shows the projected flood plains for the year 2020.
+                    The New York Panel on Climate Change has projected what the flood plain will look like in a <strong>100-year and 500-year storm</strong> (a storm that typically occurs once every 100 and 500 years, respectively). This map shows the projected flood plains for the 2050s, from the <a target="_blank" href="https://www.arcgis.com/home/item.html?id=39fec5dbaeb7438592db0a91734ca361">EJNYC Mapper data</a> from the NYC Mayor’s Office of Climate &amp; Environmental Justice.
                 </p>
                 <h3>Asthma Rates</h3>
                 <p>
-                    Residents of Williamsburg and Greenpoint experience higher instances of asthma due to proximity to truck routes and sources of air pollution. This layer shows distribution of hospital visits for asthma from 2008 to 2012. This data was retrieved from <a target="_blank" href="http://infoshare.org/main/public.aspx">Infoshare.org</a> of Community Studies of New York, Inc., a non-profit that compiles and aggregates data.
+                    Residents of Williamsburg and Greenpoint experience higher instances of asthma due to proximity to truck routes and sources of air pollution. This layer shows the yearly rate of emergency room visits for asthma from 2013 to 2017, by neighborhood. This data comes from the New York State Department of Health’s <a target="_blank" href="https://health.data.ny.gov/Health/Sub-County-Data-for-Selected-Health-Outcomes-in-Ne/vtby-z2yc">Environmental Public Health Tracking program</a>, which is based on hospital discharge records (SPARCS).
                 </p>
                 <h3>Median Household Income</h3>
                 <p>
-                    Median household income is the middle income value, meaning half the population has an income above that amount, and half have an income below that amount. Median household income was $52,259 for New York City and $53,046 for the United States, according to the 2009-2013 American Community Survey.
+                    Median household income is the middle income value, meaning half the population has an income above that amount, and half have an income below that amount. Median household income was $80,483 for New York City and $80,734 for the United States, according to the 2020-2024 American Community Survey.
                 </p>
                 <h3>Population Density</h3>
                 <p>
-                    This data reflects population estimates from 2009-2013 American Community Survey (ACS). ACS is a running sample of approximately 1 in 40 households in the U.S. This sample is taken each month over a 1, 3 or 5-year period. The longer the sample time, generally the higher reliability of the data due to a larger sample size. These maps use the 5-year estimate from 2009-2013, the latest available 5-year data.
+                    This data reflects population estimates from the 2020-2024 American Community Survey (ACS). ACS is a running sample of approximately 1 in 40 households in the U.S. This sample is taken each month over a 1, 3 or 5-year period. The longer the sample time, generally the higher reliability of the data due to a larger sample size. These maps use the 5-year estimate from 2020-2024, the latest available 5-year data.
                 </p>
                 <h3>Industrial History Walking Tour</h3>
                 <p>
-                    Follow the points and paths on this layer to experience NAG’s Industrial History Walking Tour. The points of interest on this tour commemorate the neighborhood’s industrial legacy while bringing attention to the chemical contamination they have left behind, and its impact to the health and well-being of current residents. Find out <a target="_blank" href="http://nag-brooklyn.org/2015/04/nags-industrial-history-walking-tours-of-williamsburg-and-greenpoint-coming-in-may-kick-off-event-april-28th-featuring-a-screening-of-the-film-shellshocked"/>more information about the tour.</a>
+                    Follow the points and paths on this layer to experience NAG’s Industrial History Walking Tour. The points of interest on this tour commemorate the neighborhood’s industrial legacy while bringing attention to the chemical contamination they have left behind, and its impact to the health and well-being of current residents. Find out <a target="_blank" href="http://nag-brooklyn.org/2015/04/nags-industrial-history-walking-tours-of-williamsburg-and-greenpoint-coming-in-may-kick-off-event-april-28th-featuring-a-screening-of-the-film-shellshocked">more information about the tour.</a>
+                </p>
+                <p>
+                    <em>The walking tour layer is currently unavailable: its data was stored on a hosting service that no longer exists and has not been recovered.</em>
                 </p>
             </div>
 
@@ -222,14 +225,14 @@
     </script>
 
     <!-- Javascript Libraries -->
-    <script src="//cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/cartodb.js"></script>
-    <script src='//api.tiles.mapbox.com/mapbox.js/v2.2.1/mapbox.standalone.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <script src="js/pelias-leaflet-geocoder.js"></script>
-    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
     <script src="js/bower_components/handlebars/handlebars.js"></script>
 
     <!-- js code -->
-    <script src="js/carto.js"></script>
+    <script src="js/styles.js"></script>
     <script src="js/legendstyles.js"></script>
     <script src="js/layers.js"></script>
     <script src="js/main.js"></script>

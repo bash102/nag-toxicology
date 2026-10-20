@@ -1,61 +1,67 @@
 var app = app || {};
 
+// Definitions for the map's data-layers.
+// Each layer is a GeoJSON file in data/ that is drawn with Leaflet using the
+// styles in app.styles (ported from the CartoCSS in mss/).
 app.layers = (function(){
-  
-  var cartocss = app.cartocss;
-  
+
+  var styles = app.styles;
+
   return {
-      user_name: 'nag-brooklyn',
-      type: 'cartodb',
       sublayers: [{
           name: 'acs_pop',
-          sql: "SELECT * FROM acs_5yr_2013_merge_copy",
-          cartocss: cartocss.popdensity,
+          url: 'data/acs.geojson',
+          style: styles.popdensity,
           interactivity: "people_per_square_mile"
       }, {
           name: 'acs_income',
-          sql: "SELECT * FROM acs_5yr_2013_merge_copy",
-          cartocss: cartocss.income,
+          url: 'data/acs.geojson',
+          style: styles.income,
           interactivity: "median_household_income, percent_hispanic, percent_nonhispanic_black, percent_nonhispanic_asian, percent_nonhispanic_white"
       }, {
           name: 'asthma',
-          sql: "SELECT * FROM asthma_5yr",
-          cartocss: cartocss.asthma,
-          interactivity: "asthma_rate_per_1000_people"
+          url: 'data/asthma.geojson',
+          style: styles.asthma,
+          interactivity: "geography_name, asthma_rate_per_1000_people, measure, period"
       }, {
           name: 'flood_risk',
-          sql: "SELECT * FROM floodrisk", 
-          cartocss: cartocss.floodrisk,
+          url: 'data/flood_risk.geojson',
+          style: styles.floodrisk,
           interactivity: ""
       }, {
           name: 'polluted_polygons',
-          sql: "SELECT * FROM polluted_poly_f",
-          cartocss: cartocss["polluted-areas"],
-          interactivity: "site_or_owner_name, address, description, program, link_for_more_information, reference_number"
+          url: 'data/polluted_polygons.geojson',
+          style: styles["polluted-areas"],
+          interactivity: "site_or_owner_name, address, description, program, link, reference_number"
       }, {
           name: 'industrial_history_lines',
-          sql: "SELECT * FROM industrialhistory_lines",
-          cartocss: cartocss["industrial-history-lines"],
+          url: 'data/industrial_history_points.geojson',
+          style: styles["industrial-history-lines"],
+          toLine: true,
           interactivity: ""
       }, {
           name: 'industrial_history_points',
-          sql: "SELECT * FROM industrialhistory_points",
-          cartocss: cartocss["industrial-history-points"],
+          url: 'data/industrial_history_points.geojson',
+          marker: styles["industrial-history-points"],
           interactivity: "name, address, type_of_industry_present_or_former, description, source_one, source_two"
       }, {
           name: 'polluted_points',
-          sql: "SELECT * FROM polluted_points_f",
-          cartocss: cartocss["polluted-points"],
-          interactivity: "facility_or_owner, description, type_of_pollution, address, date, agency_program, link_for_more_information, quantity, remediated, responding_agency, source"
+          url: 'data/polluted_points.geojson',
+          marker: styles["polluted-points"],
+          interactivity: "name, category, description, address, date, program, link, source",
+          valueLabels: {
+            category: {
+              highly_regulated: "Highly Regulated Site",
+              e_designation: "E-Designated Lot",
+              spill_major: "Spill >= 100 Gallons",
+              spill_minor: "Spill < 100 Gallons"
+            }
+          }
       }, {
           name: 'waste_transfer_stations',
-          sql: "SELECT * FROM wts_July30", 
-          cartocss: cartocss.wts,
-          interactivity: "name, facilitytype, address, source"
+          url: 'data/waste_transfer_stations.geojson',
+          marker: styles.wts,
+          interactivity: "name, facility_type, address, source"
       }]
   }
-})();  
-
-// , median_household_income, medianage, percent_nonhispanic_white, percent_hispanic, percent_nonhispanic_black, percent_nonhispanic_asian
-
-
+})();

@@ -100,6 +100,7 @@ footer {
   bottom: 0;
   left: 325px;
   right: 0;
+  z-index: 0; /* keep Leaflet's panes (z-index 400+) beneath the legend & zoom buttons */
 }
 
 /* Zoom in and out */
@@ -255,6 +256,12 @@ footer {
     background-color: #fff;
 }
 
+/* layers whose data isn't available */
+.dlayer button.data-layer:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* button group title */
 .dlayer .subtitle{
     font-size: 1.4em;
@@ -294,15 +301,38 @@ div.dlayer-tooltip {
 }
 
 
-/* These are hacks to fix the infowindow issues, do not remove */
-div.cartodb-popup .jspPane {
-    max-width: 190px;
+/* Map info-windows */
+.map-popup-content h4 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
 }
-.cartodb-popup-content.jspScrollable {
-    max-height: 180px !important;
+.map-popup-content p {
+    margin: 2px 0 8px;
+    font-size: 13px;
+    word-wrap: break-word;
 }
-.cartodb-popup-content.jspScrollable .jspContainer {
-    height: 180px !important;
+.map-popup-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Zip code labels from the original custom basemap */
+.zip-label {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 24px;
+    text-align: center;
+    color: #999;
+    opacity: 0.7;
+    text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+}
+
+.legend .layer-error {
+    font-size: 12px;
+    color: #a50008;
 }
 
 /* Pelias Geocoder UI positioning */

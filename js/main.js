@@ -2,13 +2,11 @@ var app = app || {};
 
 app.map = (function(w, d, $, H) {
 
-    // "global" variables accessible within the entire app.map scope: 
-    var sublayers = [], // For storing the cartodb sublayers
-        sublayerActions = [], // for layer button interactions
-        map_object, // variable for the <div id="map"></div> DOM element to pass to Leaflet JS
+    // "global" variables accessible within the entire app.map scope:
+    var sublayers = [], // For storing the data-layers, in the same order as app.layers.sublayers
+        map_object, // the Leaflet map
         legend_data = app.legends,
         layerSource = app.layers,
-        carto = app.cartocss,
         hb_source = d.getElementById('legend-template').innerHTML,
         hb_template = H.compile(hb_source);
 
@@ -27,7 +25,7 @@ app.map = (function(w, d, $, H) {
         } else {
           return options.inverse(this);
         }
-    });        
+    });
 
     // create the Leaflet Map
     function initMap() {
@@ -43,97 +41,257 @@ app.map = (function(w, d, $, H) {
             zoom: 14,
             maxZoom: 19,
             minZoom: 14,
-            scrollwheel: false,
+            scrollWheelZoom: false,
             maxBounds: mapBounds,
-            legends: true,
-            infoControl: false,
             attributionControl: true
         };
 
-        map_object = new L.Map('map', params); 
-        var accessToken = 'REMOVED'; // original Mapbox token (revoked) removed from this fork
-        var mapid = 'nag-brooklyn.66cbd2ef';
-        var attr = 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors,' + 
-                    ' <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>';
-        
-        // mapbox custom basemap tiles
-        var basemap = L.tileLayer(
-                'https://{s}.tiles.mapbox.com/v4/' + mapid + 
-                '/{z}/{x}/{y}.png?access_token=' + accessToken, 
-                { attribution: attr }
-            )
-            .addTo(map_object);
+        map_object = L.map('map', params);
 
-        // parameters for the Pelias geocoder
+        // the custom Mapbox basemap is no longer hosted, so use Esri's light gray canvas basemap
+        // with the custom basemap's data layers (truck routes, zip codes) drawn on top of it
+        var esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/',
+            attr = 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, ' +
+                   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+        L.tileLayer(esri + 'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: attr,
+            maxNativeZoom: 16,
+            maxZoom: 19
+        }).addTo(map_object);
+
+        // street labels go above the data-layers
+        map_object.createPane('labels');
+        map_object.getPane('labels').style.zIndex = 650;
+        map_object.getPane('labels').style.pointerEvents = 'none';
+
+        L.tileLayer(esri + 'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+            maxNativeZoom: 16,
+            maxZoom: 19,
+            pane: 'labels'
+        }).addTo(map_object);
+
+        initBasemapOverlays();
+
+        // parameters for the geocoder
         var geocoderOptions = {
+            url: 'https://geosearch.planninglabs.nyc/v2',
+            attribution: 'Geocoding by <a href="https://geosearch.planninglabs.nyc/">NYC GeoSearch</a>',
             bounds: mapBounds,
             placeholder : 'Search for an address',
             position: 'topright'
         };
 
-        // add the Pelias geocoder
-        L.control.geocoder('search-9FVHbsE', geocoderOptions).addTo(map_object);
-    
+        // add the geocoder, NYC GeoSearch is a Pelias API that doesn't need an API key
+        L.control.geocoder(null, geocoderOptions).addTo(map_object);
+
     } // end init map
 
-    // grab the map's data-layers from CartoDB
-    function initCartoDBLayers() {        
-        var cdb_options = {
-                cartodb_logo: false,
-                legends: false,
-                https: true,
-                attributionControl: true
-        };
+    // draws the custom basemap's data layers, which sit underneath the data-layers
+    function initBasemapOverlays() {
+        map_object.createPane('basemapOverlays');
+        map_object.getPane('basemapOverlays').style.zIndex = 350;
+        map_object.getPane('basemapOverlays').style.pointerEvents = 'none';
 
-        cartodb.createLayer(map_object, layerSource, cdb_options)
-            .addTo(map_object)
-            .on('done', function(layer) {
-                layer.setZIndex(5); // make sure the cartodb layer is on top.
+        var overlays = [{
+            url: 'data/basemap/cd1_mask.geojson',
+            style: { fillColor: '#a0a090', fillOpacity: 0.3, stroke: false }
+        }, {
+            url: 'data/basemap/zip_boundaries.geojson',
+            style: { color: '#4b4b51', weight: 1, opacity: 0.4, dashArray: '6,6' }
+        }, {
+            url: 'data/basemap/truck_routes_local.geojson',
+            style: { color: '#dfa7c9', weight: 1.8, opacity: 0.5 }
+        }, {
+            url: 'data/basemap/truck_routes_through.geojson',
+            style: { color: '#ab819c', weight: 2.5, opacity: 0.6 }
+        }];
 
-                // get the number of sublayers
-                var numSubLayers = layer.getSubLayerCount();
-
-                // iterate over the sublayers and do stuff with them
-                for (var i = 0; i < numSubLayers; i++) {
-                    var idx = getSubLayerIndex(i);
-
-                    // only enable interaction for layers that need it
-                    if (idx !== 'industrial_history_lines' || idx !== 'flood_risk' ) {
-                        layer.getSubLayer(i).setInteraction(true);
-                    } else {
-                        layer.getSubLayer(i).setInteraction(false);
-                    }
-                    
-                    // hide all sublayers by default
-                    layer.getSubLayer(i).hide();
-                    // add our sublayers to an array so we can act on them later
-                    sublayers.push(layer.getSubLayer(i));
-                    // get the field names, in the form of an array, to use for the infowindows
-                    var fields = layerSource.sublayers[i].interactivity.replace(/ /g, '').split(",");                 
-
-                    // create the info-windows manually
-                    cartodb.vis.Vis.addInfowindow(
-                        map_object, 
-                        layer.getSubLayer(i),
-                        fields
-                    );
-                }
-
-            }).on('error', function(error) {
-                console.log('error with cartodb.createLayer: ', error);
+        // load the overlays in sequence so they stack in the order above
+        overlays.reduce(function(prev, overlay) {
+            return prev.then(function() {
+                return $.getJSON(overlay.url).then(function(data) {
+                    L.geoJSON(data, {
+                        pane: 'basemapOverlays',
+                        interactive: false,
+                        style: overlay.style
+                    }).addTo(map_object);
+                });
             });
-    }  
+        }, $.Deferred().resolve().promise()).fail(function(err) {
+            console.log('error loading basemap overlays: ', err);
+        });
+
+        $.getJSON('data/basemap/zip_labels.geojson').done(function(data) {
+            L.geoJSON(data, {
+                pointToLayer: function(feature, latlng) {
+                    return L.marker(latlng, {
+                        pane: 'basemapOverlays',
+                        interactive: false,
+                        icon: L.divIcon({
+                            className: 'zip-label',
+                            html: feature.properties.zipcode,
+                            iconSize: [80, 24],
+                            iconAnchor: [40, 12]
+                        })
+                    });
+                }
+            }).addTo(map_object);
+        });
+    }
+
+    // turns a property name such as "link_for_more_information" into "Link for more information"
+    function humanize(field) {
+        var text = field.replace(/_/g, ' ');
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function formatValue(field, value, valueLabels) {
+        if (valueLabels && valueLabels[field] && valueLabels[field][value]) {
+            return escapeHtml(valueLabels[field][value]);
+        }
+        if (typeof value === 'number') {
+            if (field.indexOf('percent') === 0) return value.toFixed(1) + '%';
+            if (field.indexOf('income') !== -1) return '$' + Math.round(value).toLocaleString();
+            return value.toLocaleString();
+        }
+        var text = escapeHtml(value);
+        if (/^https?:\/\//.test(value)) {
+            return '<a target="_blank" rel="noopener" href="' + text + '">' + text + '</a>';
+        }
+        return text;
+    }
+
+    // builds the info-window content from the layer's interactivity fields
+    function popupContent(fields, properties, valueLabels) {
+        var html = fields.filter(function(field) {
+            var value = properties[field];
+            return value !== null && value !== undefined && value !== '';
+        }).map(function(field) {
+            return '<h4>' + humanize(field) + '</h4><p>' + formatValue(field, properties[field], valueLabels) + '</p>';
+        }).join('');
+
+        return '<div class="map-popup-content">' + html + '</div>';
+    }
+
+    // joins the walking tour stops into a line, in the order of their "stop" property
+    function tourLine(data) {
+        var coords = data.features.slice().sort(function(a, b) {
+            return a.properties.stop - b.properties.stop;
+        }).map(function(feature) {
+            return feature.geometry.coordinates;
+        });
+
+        return {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: coords }
+        };
+    }
+
+    // creates a data-layer that downloads its GeoJSON the first time it is shown
+    function createSubLayer(source) {
+        var fields = source.interactivity ? source.interactivity.replace(/ /g, '').split(",") : [],
+            group = L.featureGroup(),
+            geojson = null,
+            request = null,
+            visible = false;
+
+        function restyle() {
+            if (!geojson) return;
+            var zoom = map_object.getZoom();
+            geojson.eachLayer(function(layer) {
+                var style = source.marker ?
+                    source.marker(layer.feature, zoom) :
+                    source.style(layer.feature, zoom);
+                layer.setStyle(style);
+                if (style.radius) layer.setRadius(style.radius);
+            });
+        }
+
+        function load() {
+            if (request) return request;
+
+            request = $.getJSON(source.url).done(function(data) {
+                if (source.toLine) data = tourLine(data);
+
+                geojson = L.geoJSON(data, {
+                    style: function(feature) {
+                        return (source.style || source.marker)(feature, map_object.getZoom());
+                    },
+                    pointToLayer: function(feature, latlng) {
+                        return L.circleMarker(latlng, source.marker(feature, map_object.getZoom()));
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (fields.length) {
+                            layer.bindPopup(popupContent(fields, feature.properties, source.valueLabels), {
+                                maxWidth: 240,
+                                maxHeight: 220
+                            });
+                        }
+                    }
+                });
+                group.addLayer(geojson);
+            }).fail(function(xhr, status, error) {
+                console.log('error loading data-layer ' + source.name + ': ', error || status);
+                showLayerError(source.name);
+            });
+
+            return request;
+        }
+
+        map_object.on('zoomend', restyle);
+
+        return {
+            name: source.name,
+            show: function() {
+                visible = true;
+                load().done(function() {
+                    if (visible) {
+                        group.addTo(map_object);
+                        // keep polygons beneath points
+                        if (source.marker) group.bringToFront(); else group.bringToBack();
+                    }
+                });
+            },
+            hide: function() {
+                visible = false;
+                group.remove();
+            }
+        };
+    }
+
+    // tells the user a data-layer couldn't be loaded
+    function showLayerError(id) {
+        var $legend = $('#legend-' + id);
+        if ($legend.length && !$legend.find('.layer-error').length) {
+            $legend.append('<p class="layer-error">This layer\'s data could not be loaded.</p>');
+        }
+    }
+
+    // set up the map's data-layers
+    function initDataLayers() {
+        layerSource.sublayers.forEach(function(source) {
+            sublayers.push(createSubLayer(source));
+        });
+    }
 
     // gets a data-layer's numeric index or text id from the app.layers.sublayers
     function getSubLayerIndex(val) {
         var idx = null;
-        if (typeof val === 'number') {                    
+        if (typeof val === 'number') {
             layerSource.sublayers.forEach(function(d,i){
                 if (val === i) {
                     idx = d.name;
                 }
             });
-        } else {            
+        } else {
             layerSource.sublayers.forEach(function(d,i){
                 if (d.name === val) {
                     idx = i;
@@ -148,6 +306,8 @@ app.map = (function(w, d, $, H) {
         var id_hash = '#' + id + '.data-layer', // the button id
             $button = $(id_hash); // the button itself
 
+        if ($button.prop('disabled')) return;
+
         if (id === "industry") {
             var a = getSubLayerIndex('industrial_history_lines'),
                 b = getSubLayerIndex('industrial_history_points');
@@ -158,7 +318,7 @@ app.map = (function(w, d, $, H) {
                 sublayers[b].hide();
                 removeLegend('industrial_history_points');
                 $button.removeClass('active');
-            
+
             } else if (!$button.hasClass('active')) {
                 // otherwise turn it on
                 sublayers[a].show();
@@ -178,7 +338,7 @@ app.map = (function(w, d, $, H) {
                 removeLegend('polluted_points');
                 removeLegend('polluted_polygons');
                 $button.removeClass('active');
-            
+
             } else if (!$button.hasClass('active')) {
                 // otherwise turn it on
                 sublayers[a].show();
@@ -197,7 +357,7 @@ app.map = (function(w, d, $, H) {
                 sublayers[index].hide();
                 removeLegend(id);
                 $button.removeClass('active');
-            
+
             } else {
                 // otherwise turn it on
                 sublayers[index].show();
@@ -210,15 +370,15 @@ app.map = (function(w, d, $, H) {
                 // remove other choropleth legends & layers if they are displayed,
                 // multiple choropleth layers displayed simultaneously look muddy and aren't a useful UX
                 for (var i=0; i<3; i++) {
-                    
+
                     var x = getSubLayerIndex(i);
-                    
+
                     if ($('#legend-' + x).length && i !== index) {
                         removeLegend(x);
                         sublayers[i].hide();
                     }
 
-                    if (i !== index) { 
+                    if (i !== index) {
                         var idx = getSubLayerIndex(i),
                         $otherButton = $('#'+idx);
                         $otherButton.removeClass('active');
@@ -227,13 +387,13 @@ app.map = (function(w, d, $, H) {
             }
         }
     }
-    
+
     // renders the data-layer's legend using Handlebars JS
     function renderLegend(id) {
         var data = legend_data[id];
         data.id = id;
-        
-        function passData() {            
+
+        function passData() {
             var html = hb_template(data);
             $('#map-legend-container').append(html);
         }
@@ -242,7 +402,7 @@ app.map = (function(w, d, $, H) {
             var h1 = $('#map-legend-container').innerHeight(),
                 h2 = $('#legend-' + id).innerHeight(),
                 total = h1 + h2;
-            
+
             $('#map-legend-container').height(total);
         }
 
@@ -258,12 +418,14 @@ app.map = (function(w, d, $, H) {
             lHeight = lcontainer.innerHeight(),
             newHeight = lHeight - tHeight;
 
+        if (!target.length) return;
+
         target.remove();
         lcontainer.height(newHeight);
     }
 
-    /*** 
-        Map Interaction Event Listeners 
+    /***
+        Map Interaction Event Listeners
     ***/
 
     // load the appropriate data-layer on its corresponding button click
@@ -280,12 +442,12 @@ app.map = (function(w, d, $, H) {
             var id = getSubLayerIndex(i);
             removeLegend(id);
         });
-        
+
         // de-activate the buttons
         $('.data-layer').removeClass('selected pressed active');
-        
-        // close all open cartodb-infowindows
-        $('div.cartodb-infowindow').css('display', 'none');
+
+        // close any open info-windows
+        map_object.closePopup();
     });
 
     // set up custom zoom buttons
@@ -304,7 +466,7 @@ app.map = (function(w, d, $, H) {
         // gray out the zoom button if user is at max-zoom or min-zoom
         map_object.on('zoomend', function(){
             var curZoom = map_object.getZoom();
-            
+
             if (curZoom === 19) {
                 $('#zoom-in').addClass('not-active');
             } else if (curZoom === 14) {
@@ -319,11 +481,11 @@ app.map = (function(w, d, $, H) {
     /* get it all going! */
     var init = function() {
         initMap();
-        initCartoDBLayers();
+        initDataLayers();
         initZoomButtons();
     };
 
-    // stuff that's publicly accessible outside the app.map module, 
+    // stuff that's publicly accessible outside the app.map module,
     // eg: in the console do app.map.sublayers;
     return {
         init: init,

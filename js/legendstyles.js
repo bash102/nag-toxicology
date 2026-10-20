@@ -5,7 +5,7 @@ app.legends = (function(){
   return {
     acs_pop : {
       title : "Population Density",
-      subtitle: "People per sq mile", // ppl per sq mile
+      subtitle: "People per sq mile, 2020-2024",
       type : 'polygon',
       items : [
         {
@@ -16,10 +16,10 @@ app.legends = (function(){
           label : "25,001 - 40,000"
         },{
           color : "#e8dc91",
-          label : "40,001 - 50,500"
+          label : "40,001 - 55,000"
         },{
           color : "#dfcd66",
-          label : "50,501 - 75,000"
+          label : "55,001 - 75,000"
         },{
           color : "#cfb928",
           label : "75,001 or more"
@@ -29,44 +29,45 @@ app.legends = (function(){
 
     acs_income : {
       title : "Median Household Income",
+      subtitle : "2020-2024, in 2024 dollars",
       type : 'polygon',
       items : [
           {
           color : "#dcf5e8",
-          label : "0 - $25,000"
+          label : "$50,000 or less"
         },{
           color : "#a5d0b4",
-          label : "$25,001 - $50,000"
+          label : "$50,001 - $90,000"
         },{
           color : "#75ab7e",
-          label : "$50,001 - $65,000"
+          label : "$90,001 - $130,000"
         },{
           color : "#4f8759",
-          label : "$65,001 - $75,000"
+          label : "$130,001 - $160,000"
         },{
           color : "#216437",
-          label : "$75,001 or more"
+          label : "$160,001 or more"
         }
       ]
     },
 
     asthma : {
       title : "Asthma Rate",
-      subtitle : "# of cases per 1,000 people, 2008-2012",
+      subtitle : "ER visits per 1,000 people per year, 2013-2017",
       type : 'polygon',
       items : [
         {
           color : "#bfa4cd",
-          label : "1 - 5"
+          label : "Less than 6"
         },{
           color : "#9c7aac",
-          label : "6 - 9"
+          label : "6 - 9.9"
         },{
-          color : "#7a518b ",
-          label : "10 - 20"
+          color : "#7a518b",
+          label : "10 - 20.9"
         },{
           color : "#5a3072",
-          label : "21 - 35"
+          label : "21 or more"
         }
       ]
     },
@@ -77,11 +78,11 @@ app.legends = (function(){
       items : [
         {
           color : "#93a5b6",
-          label : "Projected 500-year storm"
+          label : "Projected 500-year storm, 2050s"
         },
         {
           color : "#2E5387",
-          label : "Projected 100-year storm"
+          label : "Projected 100-year storm, 2050s"
         }
       ]
     },
@@ -113,15 +114,15 @@ app.legends = (function(){
       type : 'point',
       items : [
         {
-          color : "#7b0006",
+          color : "#a50008",
           label : "Highly Regulated Sites"
         },
         {
-          color : "#fba782",
+          color : "#f7b699",
           label : "E-Designated"
         },
         {
-          color : "#aa04ee",
+          color : "#9801d6",
           label : "Spills >= 100 Gallons"
         },
         {

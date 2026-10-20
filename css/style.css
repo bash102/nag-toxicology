@@ -1,0 +1,374 @@
+html {
+    font-size: 10px;
+}
+
+html,
+body {
+    font-family: 'Open Sans', sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-size: 62.5%; /* so that 1em = 10px */  
+    width: 100%;
+    height: 100%;
+}
+
+*, *:before, *:after {
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -o-box-sizing: border-box;
+  -ms-box-sizing: border-box;
+}
+
+img {
+    max-width: 100%;
+}
+
+img#logo {
+    display: block;
+    max-width: 93%;
+    margin: 0 auto;
+}
+
+strong {
+    font-weight: 700;
+}
+
+p#short-desc {    
+    margin-bottom: 10px;
+    line-height: 140%;
+    vertical-align: middle;
+    display: inline-block;
+    text-align: center;
+    text-indent: 0;
+    padding: 0 5px;
+    font-style: italic;
+    font-size: 1.3em;
+    letter-spacing: 0.05em;
+}
+
+/* use a pointer cursor for all things button related */
+button, a, li.nav {
+    cursor: pointer;
+}
+
+li {
+  list-style-type: none;
+  text-decoration: none;
+}
+
+li.nav {
+    display: inline-block;
+    text-align: center;
+    text-transform: uppercase;
+    width: 99px;
+    height: 46px;
+    padding: 3px 0;
+    vertical-align: middle;
+}
+
+li.nav a {
+    color: #000;
+    font-weight: bold;
+    font-size: 13px;
+    text-decoration: none;    
+}
+
+li.nav:first-child, li.nav#contact {
+    padding-top: 15px;
+}
+
+li.nav:hover {
+    background-color: #FFF;
+}
+
+li.nav.active {
+    background-color: #F2F2F2;
+}
+
+footer {
+    position: absolute;
+    bottom: 0px;
+    height: 60px; 
+}
+
+/* Map container */
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 325px;
+  right: 0;
+}
+
+/* Zoom in and out */
+.zoombtn {
+    position: absolute;
+    width:15px;
+    top: 10px;
+    right: 240px;
+}
+.zoombtn > button {
+    width:25px;
+    height:25px;
+    background-color: #fff;
+    border:0px;
+    padding:3px;
+    box-shadow: 1px 1px 3px #9e9e9e;
+}
+
+.zoombtn > button.not-active {
+    background-color: #D9D9D9;
+}
+
+.ui-icon-minusthick {
+    background-position: -63px -128px;
+}
+
+.zoombtn > button.not-active .ui-icon-minusthick {
+    background-image: url(../img/ui-icons_888888_256x240.png);
+}
+
+.zoombtn > button.not-active .ui-icon-plusthick {
+    background-image: url(../img/ui-icons_888888_256x240.png);
+}
+
+#container {
+    width: inherit;
+    height: inherit;
+}
+
+.ui {
+  position: absolute;
+  display: inline-block;
+  
+  background-color: #D9D9D9;
+  border: 0px;
+  box-shadow: 1px 1px 3px #9e9e9e;
+  
+  padding: 10px;
+  margin: 0px;
+
+  font-size: 1.6em;
+
+  z-index: 5;
+}
+
+.ui h3 {
+  font-size: 1.5em;
+  text-transform: uppercase;
+  padding-bottom: 2px;
+  margin: 0;
+  letter-spacing: 0em;  
+  display: inline-block;  
+}
+
+.ui.ui-left {
+    max-height: 100%;
+    width: 325px;
+}
+
+.menu {    
+    width: 305px;
+    margin: 0;
+    overflow: hidden;
+}
+
+.menu.top-nav ul, .menu.footernav ul {
+    padding-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.tabs {
+    width: 302px;
+    background-color:#f1f0f0;
+    padding: 20px;
+    line-height: 180%;
+    overflow-y: hidden;
+    display: none;
+}
+
+.tabs.active {
+    display: block;
+    overflow-y: visible;
+    height: auto;
+}
+
+.tabs p {
+    font-size: 1.3em;
+    line-height: 1.5em;
+    text-indent: 1.2em;
+    padding-bottom: .4em;
+    margin-top: 0;
+}
+
+.tabs p a {
+    color:#202257;
+    font-weight: bold;
+    font-size: 13px;
+    text-decoration: none;    
+}
+
+.tabs p a:hover {
+    text-decoration: underline;
+}
+
+.tabs p.copyright {
+    text-indent: 0;
+    text-align: center;
+    color:#696969;
+}
+
+.tabs.contact p, .tabs.aboutus p {
+    margin-top: 15px;
+    text-indent: 0;
+}
+
+.tabs.metadata h3:not(:first-child) {
+    margin-top: 15px;
+}
+
+/*Buttons at layers only*/
+.dlayer .data-layer {
+    width:50px; 
+    height:50px;
+    border-radius: 25px;
+    border:1px solid #9d9d9d;
+    color:#9d9d9d;
+    margin: 10px 5px 25px 0px;
+}
+
+/* initial button state */
+.dlayer button.data-layer {
+    background-color: #d6d6d6;
+}
+
+/* hover state */
+.dlayer button.data-layer:hover {
+    background-color: #E6E6E6;   
+}
+
+/* active / selected state */
+.dlayer button.data-layer.active {
+    background-color: #fff;
+}
+
+/* button group title */
+.dlayer .subtitle{
+    font-size: 1.4em;
+    border-left: 3px solid #9d9d9d;
+    color: #9d9d9d;
+    text-indent: 5px;
+}
+
+/* jQuery tool tip override */
+div.dlayer-tooltip {
+    font-size: 1.8em !important;
+}
+
+/* reset layer button container */
+.nextsteps {
+    text-align: center;
+    vertical-align: middle;
+    margin: 0;
+}
+
+.nextsteps button {
+    padding: 10px;
+    border:1px solid #9d9d9d;
+    color:#4d4d4d;
+    background-color: #d6d6d6;
+    font-size: 1em;
+    border-radius: 0px;
+    width:110px;
+}
+
+.nextsteps button:hover {
+    background-color: #E6E6E6;
+}
+
+#aboutus_b {
+    color: #696969; 
+}
+
+
+/* These are hacks to fix the infowindow issues, do not remove */
+div.cartodb-popup .jspPane {
+    max-width: 190px;
+}
+.cartodb-popup-content.jspScrollable {
+    max-height: 180px !important;
+}
+.cartodb-popup-content.jspScrollable .jspContainer {
+    height: 180px !important;
+}
+
+/* Pelias Geocoder UI positioning */
+.leaflet-top.leaflet-right .leaflet-pelias-control.leaflet-bar.leaflet-control {
+    position: relative;
+    right: 220px;
+    top: 65px;
+}
+
+/* hide the mobile message on larger screen sizes */
+.mobile-message {
+    display: none;
+}
+
+
+/* Media queries for mobile display */
+@media only screen and (max-width: 480px) {
+    /* Don't display the map and related ui elements on mobile */
+    #map-legend-container, #map, .zoombtn {
+        display: none;
+    }
+
+    #container {
+        background: hsl(0, 0%, 65%);
+    }
+    
+    .ui.ui-left {
+        position: relative;
+        display: block;
+        margin: 0 auto;
+        border: none;
+        box-shadow: none;
+    }
+
+    #dlayer {
+        cursor: default;
+        background: rgba(0,0,0,0.3);
+    }
+
+    #dlayer a {
+        color: rgba(0,0,0,0.5);
+    }
+
+    .menu.tabs.dlayer .env,
+    .menu.tabs.dlayer .ngh,
+    .menu.tabs.dlayer .ind,
+    .menu.tabs.dlayer .nextsteps {
+        display: none !important;
+    }
+
+    .menu.tabs.dlayer .mobile-message {
+        display: block;
+    }
+
+/*    #about.nav.about {
+        background: #F2F2F2;
+    }*/
+
+/*    .menu.tabs.about {
+        display: block;
+    }*/
+}
+
+@media only screen and (max-width: 420px) {
+    /* Don't display the map and related ui elements on mobile */
+    #map-legend-container, #map {
+        display: none;
+    }
+}

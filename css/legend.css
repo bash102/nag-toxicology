@@ -1,0 +1,89 @@
+#map-legend-container {
+  top: 10px;
+  right: 10px;
+  width: 200px;
+  height: 110px;
+  background-color: #fff;
+}
+
+#map-legend-container ul {
+  list-style-type: none;
+  padding-left: 0; /* fire fox fix */
+  margin: 0;
+}
+
+div.legend {
+  padding-top: 0;
+  /*padding-bottom: 10px;*/
+  /*background: #fff;*/
+}
+
+div.legend strong {
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+div.ui .legend h3 {
+  text-transform: none;
+}
+
+ul.legend-labels li {
+  display: block;
+  font-size: 1.2em;
+  list-style: none;
+  margin-left: 0;
+  text-align: left;
+  line-height: 18px;
+  padding-top: 0;
+  padding-bottom: 4px;
+}
+
+ul.legend-labels li span {
+  display: block;
+  float: left;
+  height: 15px;
+  width: 15px;
+  margin-right: 5px;
+  margin-left: 0;
+  opacity: 0.7;
+  border: 1px solid #cecece; 
+}
+
+ul.legend-labels li span.point {
+  border-radius: 50%;
+  margin-top: 4px;
+  width: 7px;
+  height: 7px;
+}
+
+ul.legend-labels li:nth-child(0n+3) span.point {
+  width: 12px;
+  height: 12px;
+  margin-left: -2.5px;
+}
+
+ul.legend-labels li span.point-donut {
+  background: none;
+  border-radius: 50%;
+  border-color: #101010;
+  border-width: 3px;
+  padding: 2px;
+  margin-top: 3px;
+  width: 1px;
+  height: 1px;
+}
+
+span.through-truck {
+  background-color: #bd9faa;/*hsl(10,6%,81%);*/
+  height: 5px;
+}
+
+span.local-truck {
+  background-color: #e9dae0; /*hsl(336,6%,91%);*/
+  height: 5px;
+}
+
+span.zipcodes {
+  border: 1px dashed #989898 !important;
+  background-color: #fefefe;
+}

@@ -1,0 +1,30 @@
+{
+  "name": "Greenpoint Williamsburg Toxicity Map",
+  "version": "0.0.1",
+  "homepage": "https://github.com/clhenrick/greenpoint_williamsburg_toxicity_map",
+  "authors": [
+    "Chris L Henrick",
+    "Bowon Chung"
+  ],
+  "description": "interactive map",
+  "main": "main.js",
+  "keywords": [
+    "map"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "cartodb.js": "~3.15.6",
+    "handlebars": "~3.0.3",
+    "jquery-ui": "jquery.ui#~1.11.4",
+    "mapbox.js": "~2.2.1",
+    "normalize-css": "normalize.css#~3.0.3",
+    "pelias-leaflet-geocoder": "~1.0.1"
+  }
+}

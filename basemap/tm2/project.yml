@@ -1,0 +1,28 @@
+_prefs: 
+  mapid: ''
+  saveCenter: true
+_properties: {}
+attribution: NAG Brooklyn, SAVI, Pratt Center
+bounds: 
+  - -180
+  - -85.0511
+  - 180
+  - 85.0511
+center: 
+  - -73.95176410675049
+  - 40.708995002751216
+  - 15
+description: 'Basemap for NAG's Greenpoint-Williamsburg Toxicity Map '
+format: "png8:m=h"
+interactivity_layer: ''
+layers: null
+maxzoom: 22
+minzoom: 0
+name: nag-bk-toxicity-map
+source: "mapbox:///mapbox.mapbox-streets-v5,nag-brooklyn.702fdc44"
+styles: 
+  - style.mss
+  - roads.mss
+  - data-layers.mss
+  - labels.mss
+template: ''

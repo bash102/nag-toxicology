@@ -132,6 +132,69 @@ app.legends = (function(){
       ]
     },
 
+    air_pm25 : {
+      title : "Fine Particles (PM2.5)",
+      subtitle : "Annual average, µg/m³, 2024",
+      type : 'polygon',
+      items : [{ color : app.styles.pm25Colors[0], label : "6.5 - 6.9" },{ color : app.styles.pm25Colors[1], label : "6.9 - 7.3" },{ color : app.styles.pm25Colors[2], label : "7.3 - 7.7" },{ color : app.styles.pm25Colors[3], label : "7.7 - 8.1" },{ color : app.styles.pm25Colors[4], label : "8.1 - 8.5" }]
+    },
+
+    air_no2 : {
+      title : "Nitrogen Dioxide (NO2)",
+      subtitle : "Annual average, ppb, 2024",
+      type : 'polygon',
+      items : [{ color : app.styles.no2Colors[0], label : "14.5 - 15.5" },{ color : app.styles.no2Colors[1], label : "15.5 - 16.5" },{ color : app.styles.no2Colors[2], label : "16.5 - 17.5" },{ color : app.styles.no2Colors[3], label : "17.5 - 18.5" },{ color : app.styles.no2Colors[4], label : "18.5 - 20.0" }]
+    },
+
+    // depends on the health condition picked in the map layers menu
+    health_conditions : function() {
+      var styles = app.styles,
+          measure = styles.healthMeasures[app.state.health_conditions] || styles.healthMeasures.casthma;
+
+      return {
+        title : "Health Conditions",
+        subtitle : measure.label + ", % of adults, 2023 estimates",
+        type : 'polygon',
+        items : styles.breakLabels(measure.breaks, '%').map(function(label, i) {
+          return { color : styles.healthColors[i], label : label };
+        }).concat({ color : "#ffffff", label : "No residents" })
+      };
+    },
+
+    lead_service_lines : {
+      title : "Lead Water Service Lines",
+      subtitle : "% of lots with lead or galvanized lines needing replacement, 2026",
+      type : 'polygon',
+      items : app.styles.breakLabels(app.styles.leadBreaks, '%').map(function(label, i) {
+        return { color : app.styles.leadColors[i], label : label };
+      })
+    },
+
+    cso_outfalls : {
+      title : "Combined Sewer Overflows",
+      subtitle : "Overflow events in 2025 (DEP model estimates); larger circles overflowed more volume",
+      type : 'point-large',
+      items : [
+        { color : app.styles.csoColors[0], label : "None" },
+        { color : app.styles.csoColors[1], label : "1 - 9" },
+        { color : app.styles.csoColors[2], label : "10 - 19" },
+        { color : app.styles.csoColors[3], label : "20 - 29" },
+        { color : app.styles.csoColors[4], label : "30 or more" }
+      ]
+    },
+
+    harbor_water_quality : {
+      title : "Harbor Water Quality",
+      subtitle : "Fecal coliform, geometric mean per 100 mL, 2023-2025",
+      type : 'point-large',
+      items : [
+        { color : app.styles.harborColors[0], label : "200 or less (meets NYS standard)" },
+        { color : app.styles.harborColors[1], label : "201 - 400" },
+        { color : app.styles.harborColors[2], label : "401 - 800" },
+        { color : app.styles.harborColors[3], label : "More than 800" }
+      ]
+    },
+
     waste_transfer_stations : {
       title : "",
       type : 'point-donut',

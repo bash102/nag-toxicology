@@ -1,5 +1,8 @@
 var app = app || {};
 
+// user selections that change how a data-layer is drawn, eg: app.state.health_conditions = 'casthma'
+app.state = app.state || {};
+
 app.map = (function(w, d, $, H) {
 
     // "global" variables accessible within the entire app.map scope:
@@ -152,12 +155,15 @@ app.map = (function(w, d, $, H) {
         });
     }
 
-    function formatValue(field, value, valueLabels) {
+    function formatValue(field, value, source) {
+        var valueLabels = source.valueLabels,
+            percentFields = source.percentFields || [];
+
         if (valueLabels && valueLabels[field] && valueLabels[field][value]) {
             return escapeHtml(valueLabels[field][value]);
         }
         if (typeof value === 'number') {
-            if (field.indexOf('percent') === 0) return value.toFixed(1) + '%';
+            if (field.indexOf('percent') === 0 || percentFields.indexOf(field) !== -1) return value.toFixed(1) + '%';
             if (field.indexOf('income') !== -1) return '$' + Math.round(value).toLocaleString();
             return value.toLocaleString();
         }
@@ -169,12 +175,14 @@ app.map = (function(w, d, $, H) {
     }
 
     // builds the info-window content from the layer's interactivity fields
-    function popupContent(fields, properties, valueLabels) {
+    function popupContent(fields, properties, source) {
+        var fieldLabels = source.fieldLabels || {};
+
         var html = fields.filter(function(field) {
             var value = properties[field];
             return value !== null && value !== undefined && value !== '';
         }).map(function(field) {
-            return '<h4>' + humanize(field) + '</h4><p>' + formatValue(field, properties[field], valueLabels) + '</p>';
+            return '<h4>' + escapeHtml(fieldLabels[field] || humanize(field)) + '</h4><p>' + formatValue(field, properties[field], source) + '</p>';
         }).join('');
 
         return '<div class="map-popup-content">' + html + '</div>';
@@ -230,7 +238,7 @@ app.map = (function(w, d, $, H) {
                     },
                     onEachFeature: function(feature, layer) {
                         if (fields.length) {
-                            layer.bindPopup(popupContent(fields, feature.properties, source.valueLabels), {
+                            layer.bindPopup(popupContent(fields, feature.properties, source), {
                                 maxWidth: 240,
                                 maxHeight: 220
                             });
@@ -250,6 +258,7 @@ app.map = (function(w, d, $, H) {
 
         return {
             name: source.name,
+            restyle: restyle,
             show: function() {
                 visible = true;
                 load().done(function() {
@@ -357,71 +366,43 @@ app.map = (function(w, d, $, H) {
                 sublayers[index].hide();
                 removeLegend(id);
                 $button.removeClass('active');
-
+            
             } else {
                 // otherwise turn it on
                 sublayers[index].show();
                 renderLegend(id);
                 $button.addClass('active');
-            }
 
-            // determine if the index is for a choropleth layer
-            if (index >= 0 && index < 3) {
                 // remove other choropleth legends & layers if they are displayed,
                 // multiple choropleth layers displayed simultaneously look muddy and aren't a useful UX
-                for (var i=0; i<3; i++) {
-
-                    var x = getSubLayerIndex(i);
-
-                    if ($('#legend-' + x).length && i !== index) {
-                        removeLegend(x);
-                        sublayers[i].hide();
-                    }
-
-                    if (i !== index) {
-                        var idx = getSubLayerIndex(i),
-                        $otherButton = $('#'+idx);
-                        $otherButton.removeClass('active');
-                    }
+                if (layerSource.sublayers[index].choropleth) {
+                    layerSource.sublayers.forEach(function(source, i) {
+                        if (i !== index && source.choropleth) {
+                            removeLegend(source.name);
+                            sublayers[i].hide();
+                            $('#' + source.name + '.data-layer').removeClass('active');
+                            $('.layer-options[data-layer="' + source.name + '"]').hide();
+                        }
+                    });
                 }
             }
+
+            $('.layer-options[data-layer="' + id + '"]').toggle($button.hasClass('active'));
         }
     }
-
+    
     // renders the data-layer's legend using Handlebars JS
     function renderLegend(id) {
         var data = legend_data[id];
+        if (typeof data === 'function') data = data();
         data.id = id;
 
-        function passData() {
-            var html = hb_template(data);
-            $('#map-legend-container').append(html);
-        }
-
-        function resizeLegendContainer() {
-            var h1 = $('#map-legend-container').innerHeight(),
-                h2 = $('#legend-' + id).innerHeight(),
-                total = h1 + h2;
-
-            $('#map-legend-container').height(total);
-        }
-
-        passData();
-        resizeLegendContainer();
+        $('#map-legend-container').append(hb_template(data));
     }
 
     // removes the data-layer's legend
     function removeLegend(id) {
-        var target = $('#legend-' + id),
-            lcontainer = $('#map-legend-container'),
-            tHeight = target.innerHeight(),
-            lHeight = lcontainer.innerHeight(),
-            newHeight = lHeight - tHeight;
-
-        if (!target.length) return;
-
-        target.remove();
-        lcontainer.height(newHeight);
+        $('#legend-' + id).remove();
     }
 
     /***
@@ -432,6 +413,20 @@ app.map = (function(w, d, $, H) {
     $('.data-layer').click(function() {
         var layer = $(this).attr('id');
         hideShow(layer);
+    });
+
+    // switch the measure shown by layers with a measure picker, eg: health conditions
+    $('.layer-options select').on('change', function() {
+        var id = $(this).closest('.layer-options').attr('data-layer'),
+            index = getSubLayerIndex(id);
+
+        app.state[id] = $(this).val();
+        sublayers[index].restyle();
+
+        if ($('#legend-' + id).length) {
+            removeLegend(id);
+            renderLegend(id);
+        }
     });
 
     // clear all the layers
@@ -445,6 +440,7 @@ app.map = (function(w, d, $, H) {
 
         // de-activate the buttons
         $('.data-layer').removeClass('selected pressed active');
+        $('.layer-options').hide();
 
         // close any open info-windows
         map_object.closePopup();
@@ -478,8 +474,21 @@ app.map = (function(w, d, $, H) {
         });
     };
 
+    // fills the health condition picker with the measures defined in app.styles
+    function initLayerOptions() {
+        var measures = app.styles.healthMeasures,
+            $select = $('#health-measure');
+
+        Object.keys(measures).forEach(function(key) {
+            $select.append($('<option>').val(key).text(measures[key].label));
+        });
+
+        app.state.health_conditions = $select.val();
+    }
+
     /* get it all going! */
     var init = function() {
+        initLayerOptions();
         initMap();
         initDataLayers();
         initZoomButtons();

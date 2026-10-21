@@ -16,6 +16,7 @@ The fork fixes this as follows:
 - **Basemap:** [Esri's Light Gray Canvas](https://www.arcgis.com/home/item.html?id=8b3d38c0819547faa83f7b7aca80bd76) tiles are the base. The original basemap's truck routes, zip code boundaries and Community District 1 mask are drawn on top, from the shapefiles in `basemap/data/`.
 - **Address search:** it uses [NYC GeoSearch](https://geosearch.planninglabs.nyc/), a free Pelias geocoder from NYC Planning that needs no API key.
 - **Data layers:** they are rebuilt from current public data, such as ACS 2020-2024, NYS DOH asthma rates, NYC 2050s floodplains, EPA ECHO, NYC (E) designations, NYS DEC spills and remediation sites, NYC OER cleanup sites and DEC solid waste facilities. The layers are stored as GeoJSON in `data/`. See [`data/SOURCES.md`](data/SOURCES.md) for every source and processing step. These are new datasets, so values and site lists differ from the 2015 map.
+- **New layers (2026):** air pollution (NYC Community Air Survey PM2.5 and NO2), combined sewer overflow outfalls, harbor water quality, lead water service lines, and adult health conditions from CDC PLACES with a picker for the condition shown.
 - **Walking tour:** the **Industrial History Walking Tour** layer is disabled. Its stops were NAG's own content, stored only in the deleted CARTO account. To restore it, add `data/industrial_history_points.geojson` (points with a numeric `stop` property giving the tour order, plus `name`, `address`, `type_of_industry_present_or_former`, `description`, `source_one` and `source_two`), then remove `disabled` from the `#industry` button in `index.html`.
 
 ## Running Locally
@@ -42,7 +43,7 @@ Bundled in the repo:
 - Normalize.css
 
 ## Rebuilding the Data
-The scripts in `scripts/` download the public sources and write `data/`. They need Python 3 with `pyshp`, `shapely` and `pyproj`.
+The scripts in `scripts/` download the public sources and write `data/`. They need Python 3 with `pyshp`, `shapely`, `pyproj`, `rasterio` and `numpy`, plus the `pdftotext` command (poppler-utils) for the sewer overflow report.
 
 ```
 python3 scripts/build_all.py               # data layers

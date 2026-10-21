@@ -10,16 +10,19 @@ app.layers = (function(){
   return {
       sublayers: [{
           name: 'acs_pop',
+          choropleth: true,
           url: 'data/acs.geojson',
           style: styles.popdensity,
           interactivity: "people_per_square_mile"
       }, {
           name: 'acs_income',
+          choropleth: true,
           url: 'data/acs.geojson',
           style: styles.income,
           interactivity: "median_household_income, percent_hispanic, percent_nonhispanic_black, percent_nonhispanic_asian, percent_nonhispanic_white"
       }, {
           name: 'asthma',
+          choropleth: true,
           url: 'data/asthma.geojson',
           style: styles.asthma,
           interactivity: "geography_name, asthma_rate_per_1000_people, measure, period"
@@ -62,6 +65,79 @@ app.layers = (function(){
           url: 'data/waste_transfer_stations.geojson',
           marker: styles.wts,
           interactivity: "name, facility_type, address, source"
+      }, {
+          name: 'air_pm25',
+          choropleth: true,
+          url: 'data/air_pm25.geojson',
+          style: styles.pm25,
+          interactivity: "label, period",
+          fieldLabels: { label: "Annual average PM2.5" }
+      }, {
+          name: 'air_no2',
+          choropleth: true,
+          url: 'data/air_no2.geojson',
+          style: styles.no2,
+          interactivity: "label, period",
+          fieldLabels: { label: "Annual average NO2" }
+      }, {
+          name: 'lead_service_lines',
+          choropleth: true,
+          url: 'data/lead_service_lines.geojson',
+          style: styles.leadServiceLines,
+          interactivity: "pct_lead_or_grr, pct_unknown, total_lines, lead, galvanized_requiring_replacement, unknown, non_lead, inventory_date",
+          percentFields: ["pct_lead_or_grr", "pct_unknown"],
+          fieldLabels: {
+            pct_lead_or_grr: "Lead or galvanized lines needing replacement",
+            pct_unknown: "Material unknown",
+            total_lines: "Service lines in area",
+            lead: "Lead lines",
+            galvanized_requiring_replacement: "Galvanized lines needing replacement",
+            unknown: "Unknown material lines",
+            non_lead: "Non-lead lines",
+            inventory_date: "Inventory date"
+          }
+      }, {
+          name: 'health_conditions',
+          choropleth: true,
+          url: 'data/health_conditions.geojson',
+          style: styles.healthConditions,
+          interactivity: "nta_name, casthma, copd, cancer, chd, diabetes, bphigh, mhlth, csmoking",
+          percentFields: ["casthma", "copd", "cancer", "chd", "diabetes", "bphigh", "mhlth", "csmoking"],
+          fieldLabels: {
+            nta_name: "Neighborhood",
+            casthma: "Adults with asthma",
+            copd: "Adults with COPD",
+            cancer: "Adults ever diagnosed with cancer (excluding skin cancer)",
+            chd: "Adults with coronary heart disease",
+            diabetes: "Adults with diabetes",
+            bphigh: "Adults with high blood pressure",
+            mhlth: "Adults with frequent poor mental health",
+            csmoking: "Adults who smoke"
+          }
+      }, {
+          name: 'cso_outfalls',
+          url: 'data/cso_outfalls.geojson',
+          marker: styles.csoOutfalls,
+          interactivity: "outfall_id, name, receiving_water, facility, overflow_events, overflow_volume_mg, overflow_period, detection, link, source",
+          fieldLabels: {
+            outfall_id: "Outfall",
+            overflow_events: "Overflow events",
+            overflow_volume_mg: "Overflow volume (million gallons)"
+          }
+      }, {
+          name: 'harbor_water_quality',
+          url: 'data/harbor_water_quality.geojson',
+          marker: styles.harborWaterQuality,
+          interactivity: "station, waterbody, water_quality_class, fecal_coliform_geomean, enterococci_geomean, do_mean_mg_l, pct_do_below_standard, n_samples, period, latest_sample_date, source",
+          percentFields: ["pct_do_below_standard"],
+          fieldLabels: {
+            water_quality_class: "Water quality",
+            fecal_coliform_geomean: "Fecal coliform (geometric mean, per 100 mL)",
+            enterococci_geomean: "Enterococci (geometric mean, per 100 mL)",
+            do_mean_mg_l: "Dissolved oxygen (mean, mg/L)",
+            pct_do_below_standard: "Samples with low dissolved oxygen",
+            n_samples: "Samples"
+          }
       }]
   }
 })();

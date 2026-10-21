@@ -147,7 +147,127 @@ app.styles = (function(){
     };
   }
 
+  // NYCCAS air pollution surfaces, one feature per band (1 = lowest)
+  var pm25Colors = ['#fef0d9', '#fdcc8a', '#fc8d59', '#e34a33', '#b30000'],
+      no2Colors = ['#edf8fb', '#b3cde3', '#8c96c6', '#8856a7', '#810f7c'];
+
+  function airBand(colors) {
+    return function(feature) {
+      return {
+        fillColor: colors[feature.properties.band - 1] || '#ffffff',
+        fillOpacity: 0.6,
+        stroke: false
+      };
+    };
+  }
+
+  // turns class breaks into legend labels, eg: [5, 10] -> ["Less than 5%", "5 - 10%", "10% or more"]
+  function breakLabels(breaks, unit) {
+    var labels = ['Less than ' + breaks[0] + unit];
+    for (var i = 1; i < breaks.length; i++) {
+      labels.push(breaks[i - 1] + ' - ' + breaks[i] + unit);
+    }
+    labels.push(breaks[breaks.length - 1] + unit + ' or more');
+    return labels;
+  }
+
+  // classifies a value with breaks like those passed to breakLabels
+  function breakColor(value, breaks, colors, fallback) {
+    if (value === null || value === undefined || isNaN(value)) return fallback;
+    for (var i = 0; i < breaks.length; i++) {
+      if (value < breaks[i]) return colors[i];
+    }
+    return colors[breaks.length];
+  }
+
+  // CDC PLACES measures, % of adults; keys match data/health_conditions.geojson
+  var healthColors = ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'],
+      healthMeasures = {
+        casthma: { label: 'Asthma', breaks: [9, 9.5, 10, 11.5] },
+        copd: { label: 'COPD', breaks: [2.5, 3.5, 5, 10] },
+        cancer: { label: 'Cancer (excluding skin cancer)', breaks: [3.5, 4, 4.5, 5.5] },
+        chd: { label: 'Coronary heart disease', breaks: [2, 3, 4, 7] },
+        diabetes: { label: 'Diabetes', breaks: [4, 6, 9, 13] },
+        bphigh: { label: 'High blood pressure', breaks: [15, 18, 22, 30] },
+        mhlth: { label: 'Frequent poor mental health', breaks: [14, 15.5, 17, 20] },
+        csmoking: { label: 'Smoking', breaks: [6, 8, 11, 17] }
+      };
+
+  function healthConditions(feature) {
+    var measure = healthMeasures[app.state.health_conditions] ? app.state.health_conditions : 'casthma';
+    return {
+      fillColor: breakColor(feature.properties[measure], healthMeasures[measure].breaks, healthColors, '#ffffff'),
+      fillOpacity: 0.7,
+      color: '#666666',
+      weight: 0.5,
+      opacity: 0.5
+    };
+  }
+
+  // DEP service line inventory, % of lots with lead or galvanized lines needing replacement
+  var leadColors = ['#f7f7f7', '#cccccc', '#969696', '#636363', '#252525'],
+      leadBreaks = [5, 10, 15, 20];
+
+  function leadServiceLines(feature) {
+    return {
+      fillColor: breakColor(feature.properties.pct_lead_or_grr, leadBreaks, leadColors, '#ffffff'),
+      fillOpacity: 0.7,
+      color: '#666666',
+      weight: 0.5,
+      opacity: 0.5
+    };
+  }
+
+  // combined sewer overflow outfalls: color by overflow events per year, size by overflow volume
+  var csoColors = ['#c6dbef', '#6baed6', '#3182bd', '#08519c', '#08306b'],
+      csoBreaks = [1, 10, 20, 30];
+
+  function csoOutfalls(feature, zoom) {
+    var volume = feature.properties.overflow_volume_mg,
+        size = volume >= 200 ? 18 : volume >= 50 ? 14 : volume >= 10 ? 11 : 8;
+
+    return {
+      radius: (size + (zoom >= 16 ? 4 : 0)) / 2,
+      fillColor: breakColor(feature.properties.overflow_events, csoBreaks, csoColors, '#ffffff'),
+      fillOpacity: 0.9,
+      color: '#08306b',
+      weight: 1,
+      opacity: 0.8
+    };
+  }
+
+  // harbor survey stations: color by fecal coliform geometric mean (NYS standard is 200 per 100 mL)
+  var harborColors = ['#1a9850', '#fee08b', '#fc8d59', '#d73027'],
+      harborBreaks = [201, 401, 801];
+
+  function harborWaterQuality(feature, zoom) {
+    return {
+      radius: zoom >= 16 ? 11 : 9,
+      fillColor: breakColor(feature.properties.fecal_coliform_geomean, harborBreaks, harborColors, '#999999'),
+      fillOpacity: feature.properties.active === false ? 0.5 : 0.95,
+      color: '#ffffff',
+      weight: 2.5,
+      opacity: 1
+    };
+  }
+
   return {
+    csoColors: csoColors,
+    csoBreaks: csoBreaks,
+    csoOutfalls: csoOutfalls,
+    harborColors: harborColors,
+    harborWaterQuality: harborWaterQuality,
+    breakLabels: breakLabels,
+    healthColors: healthColors,
+    healthMeasures: healthMeasures,
+    healthConditions: healthConditions,
+    leadColors: leadColors,
+    leadBreaks: leadBreaks,
+    leadServiceLines: leadServiceLines,
+    pm25Colors: pm25Colors,
+    no2Colors: no2Colors,
+    pm25: airBand(pm25Colors),
+    no2: airBand(no2Colors),
     popdensity: popdensity,
     income: income,
     asthma: asthma,

@@ -73,6 +73,25 @@
                         <i class="fa fa-tint fa-2x"></i>
                     </button>
                 </div>
+                <div class="air">
+                    <span class="subtitle"> &nbsp; Air &amp; Water</span>
+                    <br />
+                    <button class="data-layer" type="button" id="air_pm25" title="Fine Particle Pollution (PM2.5)">
+                        <i class="fa fa-cloud fa-2x"></i>
+                    </button>
+                    <button class="data-layer" type="button" id="air_no2" title="Nitrogen Dioxide (NO2)">
+                        <i class="fa fa-car fa-2x"></i>
+                    </button>
+                    <button class="data-layer" type="button" id="cso_outfalls" title="Combined Sewer Overflows">
+                        <i class="fa fa-arrow-circle-down fa-2x"></i>
+                    </button>
+                    <button class="data-layer" type="button" id="harbor_water_quality" title="Harbor Water Quality">
+                        <i class="fa fa-ship fa-2x"></i>
+                    </button>
+                    <button class="data-layer" type="button" id="lead_service_lines" title="Lead Water Service Lines">
+                        <i class="fa fa-flask fa-2x"></i>
+                    </button>
+                </div>
                 <div class="ngh">
                     <span class="subtitle"> &nbsp; Neighborhood Characteristics</span>
                     <br />
@@ -85,6 +104,13 @@
                     <button class="data-layer" type="button" id="acs_pop" title="Population Density">
                         <i class="fa fa-users fa-2x"></i>
                     </button>
+                    <button class="data-layer" type="button" id="health_conditions" title="Health Conditions">
+                        <i class="fa fa-heartbeat fa-2x"></i>
+                    </button>
+                    <div class="layer-options" data-layer="health_conditions">
+                        <label for="health-measure">Health condition:</label>
+                        <select id="health-measure"></select>
+                    </div>
                 </div>
                 <div class="ind">
                     <span class="subtitle"> &nbsp; Industrial History Walking Tour</span>
@@ -138,9 +164,29 @@
                 <p>
                     The New York Panel on Climate Change has projected what the flood plain will look like in a <strong>100-year and 500-year storm</strong> (a storm that typically occurs once every 100 and 500 years, respectively). This map shows the projected flood plains for the 2050s, from the <a target="_blank" href="https://www.arcgis.com/home/item.html?id=39fec5dbaeb7438592db0a91734ca361">EJNYC Mapper data</a> from the NYC Mayor’s Office of Climate &amp; Environmental Justice.
                 </p>
+                <h3>Fine Particles (PM2.5) &amp; Nitrogen Dioxide (NO2)</h3>
+                <p>
+                    <strong>Fine particles (PM2.5)</strong> are tiny particles of soot, dust and smoke that can be breathed deep into the lungs, worsening asthma and heart and lung disease. <strong>Nitrogen dioxide (NO2)</strong> is a gas that comes mostly from burning fuel in vehicles, especially trucks, and in building boilers. These layers show 2024 annual average levels from the <a target="_blank" href="https://www.nyc.gov/site/doh/data/data-sets/air-quality-nyc-community-air-survey.page">NYC Community Air Survey</a> run by the NYC Health Department. The survey combines street-level air monitors with information about traffic, buildings and land use to estimate pollution across the city on a 300-meter grid. The levels are estimates for neighborhood-sized areas, not readings at a specific address, and the differences within Greenpoint and Williamsburg are small, so the colors are best read as relative levels within the area.
+                </p>
+                <h3>Combined Sewer Overflows</h3>
+                <p>
+                    Much of New York City's sewer system carries sewage and stormwater in the same pipes. When heavy rain overloads these pipes, a mix of untreated sewage and stormwater flows into the East River and Newtown Creek through <strong>combined sewer overflow (CSO) outfalls</strong>. This layer shows the outfalls along the neighborhood's waterways and how often each one overflowed in 2025, from the NYC Department of Environmental Protection's annual CSO report to the state. The counts are estimates from DEP's computer model of the sewer system, not meter readings, and they rise and fall with each year's rainfall.
+                </p>
+                <h3>Harbor Water Quality</h3>
+                <p>
+                    The NYC Department of Environmental Protection samples the harbor's water through its <a target="_blank" href="https://www.nyc.gov/site/dep/water/harbor-water-quality.page">Harbor Survey</a>. This layer shows sampling stations in the East River and Newtown Creek, with recent levels of <strong>fecal coliform</strong> and <strong>enterococci</strong> bacteria, which indicate sewage pollution, and <strong>dissolved oxygen</strong>, which fish and other aquatic life need to survive. Station colors compare the 2023-2025 average bacteria level with New York State's fecal coliform standard of 200 per 100 mL; Newtown Creek misses it at every station. Low oxygen in English Kills and the East Branch is partly offset by DEP's aeration systems.
+                </p>
+                <h3>Lead Water Service Lines</h3>
+                <p>
+                    A <strong>service line</strong> is the pipe that brings water from the street main into a building. Older service lines can be made of lead, which can get into drinking water. This layer shows, for each census tract, the share of properties whose service line is recorded as lead or as galvanized steel that needs replacing, from the NYC Department of Environmental Protection's <a target="_blank" href="https://www.nyc.gov/site/dep/water/lead-service-line-replacement.page">service line inventory</a> (January 2026). Most records come from old plumbing paperwork, so some lines marked lead may not be, and many properties have an unknown material. Tracts with only a few properties, such as parks and public housing campuses, can show misleading percentages. Property owners can look up their own address on DEP's service line map.
+                </p>
                 <h3>Asthma Rates</h3>
                 <p>
                     Residents of Williamsburg and Greenpoint experience higher instances of asthma due to proximity to truck routes and sources of air pollution. This layer shows the yearly rate of emergency room visits for asthma from 2013 to 2017, by neighborhood. This data comes from the New York State Department of Health’s <a target="_blank" href="https://health.data.ny.gov/Health/Sub-County-Data-for-Selected-Health-Outcomes-in-Ne/vtby-z2yc">Environmental Public Health Tracking program</a>, which is based on hospital discharge records (SPARCS).
+                </p>
+                <h3>Health Conditions</h3>
+                <p>
+                    This layer shows the estimated share of adults in each census tract who have asthma, COPD, cancer (other than skin cancer), coronary heart disease, diabetes or high blood pressure, who have frequent poor mental health, or who smoke. Pick a condition from the menu under the button. The estimates come from the CDC's <a target="_blank" href="https://www.cdc.gov/places/">PLACES</a> project (2025 release, 2023 data). They are <strong>modeled estimates, not counts of diagnoses</strong>: the CDC combines a national health survey with each tract's population, age, race and income to predict local rates. They mostly reflect who lives in a tract, such as its age mix, rather than measured local exposures, and they are not adjusted for age.
                 </p>
                 <h3>Median Household Income</h3>
                 <p>

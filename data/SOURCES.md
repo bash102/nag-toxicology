@@ -251,3 +251,352 @@ Grand Ferry Park). They do not list the stops. No capture of the
 `nag-brooklyn.cartodb.com` / `nag-brooklyn.carto.com` SQL API exists in the Wayback CDX
 index. A general web search found no published stop list either. Rather than invent
 stops, this layer is left out.
+
+## air_pm25.geojson, air_no2.geojson — `scripts/build_air_quality.py`
+
+| | |
+|---|---|
+| Source | NYC Department of Health and Mental Hygiene (DOHMH), **New York City Community Air Survey (NYCCAS)**. NYC Open Data file asset **"NYCCAS Air Pollution Rasters"** `q68s-8qxv` (`https://data.cityofnewyork.us/api/views/q68s-8qxv.json`). The download is `AnnAvg_1_16_300m.zip` (blob `6a525137-8d0e-4af3-a58b-fc7d9df060d0`, 8.4 MB), described by the attached `Data-Dictionary_NYCCAS_March_2026.xlsx`. Year 16 was added on 2026-03-04. |
+| Vintage | **NYCCAS year 16 = December 2023 – December 2024**, labelled "2024 annual average". This is the latest year in the zip. Grids: `aa16_pm300m` (PM2.5, µg/m³) and `aa16_no2300m` (NO2, ppb). |
+| Raster | ESRI ArcInfo grid, float32, 156 rows × 157 columns at **984 ft (300 m)** resolution, NAD83 / New York Long Island State Plane (US feet). Cells with no value include most of the East River. |
+
+How NYCCAS surfaces are made (from the DOHMH data dictionary): NYCCAS measures
+street-level air quality at monitoring sites across the city. The raw monitor data are
+adjusted for weather and season, then a **land-use regression** model relates them to
+nearby emission sources and landscape factors. That model predicts seasonal averages at
+unmonitored locations, the point predictions are smoothed to the grid with
+inverse-distance weighting, and the seasonal values are averaged into annual averages.
+See DOHMH's NYCCAS page (`https://www1.nyc.gov/site/doh/data/data-sets/air-quality-nyc-community-air-survey.page`)
+for the monitoring design and model details.
+
+Processing:
+- The script reads the asset metadata for the current blob, downloads and caches the
+  zip, and picks the highest-numbered `aa<N>_pm300m` / `aa<N>_no2300m` grids in it.
+- Clip: every cell that touches CD1 + 200 m (194 cells), then the polygons are cut
+  exactly to the study-area boundary.
+- Values in those cells: **PM2.5 6.559–8.482 µg/m³**, **NO2 14.777–19.754 ppb**.
+- Classified into 5 bands with fixed, round-number breaks (lower edge inclusive; the top
+  band includes its upper edge). The script stops if a future year falls outside them.
+
+  | band | PM2.5 (`air_pm25`) | cells | NO2 (`air_no2`) | cells |
+  |---|---|---|---|---|
+  | 1 | 6.5 – 6.9 µg/m³ | 10 | 14.5 – 15.5 ppb | 26 |
+  | 2 | 6.9 – 7.3 µg/m³ | 48 | 15.5 – 16.5 ppb | 92 |
+  | 3 | 7.3 – 7.7 µg/m³ | 68 | 16.5 – 17.5 ppb | 39 |
+  | 4 | 7.7 – 8.1 µg/m³ | 53 | 17.5 – 18.5 ppb | 16 |
+  | 5 | 8.1 – 8.5 µg/m³ | 15 | 18.5 – 20.0 ppb | 21 |
+
+  PM2.5 uses equal 0.4 µg/m³ steps. NO2 uses 1 ppb steps, with a wider top band so the
+  highest cell (19.75 ppb) fits.
+- Polygonized, dissolved to one MultiPolygon per band, reprojected to WGS84, and
+  simplified at **5 m** (the grid is 300 m, so this only affects the clipped edge). Band 1
+  comes first in each file.
+- Properties: `pollutant` ("pm25" / "no2"), `band` (1 = lowest), `band_min`,
+  `band_max`, `label`, `units`, `period`, `source`. The FeatureCollection also carries a
+  `metadata` object with the NYCCAS year, grid name, raster CRS, breaks and study-area
+  min/max.
+
+Caveats:
+- These are **modeled** estimates of annual-average street-level pollution, not
+  measurements. DOHMH notes they are not comparable to short-term local monitoring or
+  regulatory (EPA/DEC) monitors.
+- The grid is **300 m**, coarser than a city block, so the bands show neighborhood-scale
+  gradients only. A band edge is a cell edge, not a real boundary.
+- The range across the study area is narrow (about 1.9 µg/m³ for PM2.5 and 5 ppb for
+  NO2), so the bands separate fairly small differences. Read them as relative levels
+  within CD1, not as health or regulatory thresholds. For reference, every PM2.5 cell is
+  below the EPA annual standard of 9.0 µg/m³ (set in 2024).
+- Cells with no value (mainly East River water) leave about 1.5% of the buffered study
+  area uncovered. All of it is outside CD1 itself.
+- Breaks were chosen for the 2024 surfaces. Earlier NYCCAS years had higher levels, so
+  comparing years would need different or shared breaks.
+
+## health_conditions.geojson — `scripts/build_health_conditions.py`
+
+| | |
+|---|---|
+| Estimates | CDC **PLACES: Local Data for Better Health, Census Tract Data, 2025 release**, data.cdc.gov dataset `cwsq-ngmh` (`https://data.cdc.gov/resource/cwsq-ngmh.json`; data last updated 2025-12-12). This is the newest PLACES tract release on data.cdc.gov as of retrieval (2026-10-21). |
+| Geometry | Reused from `data/acs.geojson` (NYC DCP 2020 census tracts, clipped to shoreline). |
+
+Processing:
+- The 2025 release uses **2020 census tracts**, so it joins directly on `locationid` =
+  `geoid`. All 51 populated CD1 tracts match; no 2010→2020 crosswalk is needed.
+- Measures (crude prevalence, % of adults 18+, `datavaluetypeid = CrdPrv`, one decimal):
+  `casthma` (current asthma), `copd`, `cancer` (non-skin cancer or melanoma), `chd`
+  (coronary heart disease), `diabetes` (diagnosed), `mhlth` (frequent mental distress,
+  14+ bad days in the past 30), `bphigh` (high blood pressure), `csmoking` (current
+  smoking).
+- `year` = object giving each measure's data year. All eight are **2023** (BRFSS 2023).
+- `total_population` = PLACES `totalpopulation`, which is the **Census 2020** count. It
+  differs from the ACS 2020–2024 `total_population` in `acs.geojson`.
+- The three zero-population tracts (36047044902, 36047057902, 36047058902) are not in
+  PLACES. They are kept with `no_population: true`, null measures, null years and
+  `total_population` 0.
+- Extra properties: `no_population`, `places_release`. The FeatureCollection `metadata`
+  lists the full measure names.
+
+Caveats:
+- PLACES values are **model-based small-area estimates**, not counts or measured local
+  rates. CDC derives them with multilevel regression and post-stratification from
+  state-level BRFSS survey responses plus Census 2020 and ACS 2019–2023 demographics. A
+  tract's value mostly reflects its age, sex, race/ethnicity and poverty mix, so tracts
+  with similar demographics get similar values whatever their local environment. CDC
+  warns against using them to evaluate local programs or policies. Each value has a 95%
+  confidence interval in the source (not carried into this file).
+- Crude prevalence (not age-adjusted) is used, so age-related conditions (COPD, CHD,
+  diabetes, high blood pressure, cancer) track each tract's age mix closely. The lowest
+  values are in tracts of the Williamsburg NTA (diabetes 2.9–3.6%). The highest are in
+  East Williamsburg and South Williamsburg tracts (diabetes 14.9–25.4%).
+- Current asthma among *adults* is a different measure from the NYS EPHT asthma ED-visit
+  rates in `asthma.geojson`.
+- Suggested 5-class breaks (round numbers, %, CD1 min–max in brackets):
+  `casthma` 9 / 9.5 / 10 / 11.5 [8.6–12.8];
+  `copd` 2.5 / 3.5 / 5 / 10 [1.4–15.8];
+  `cancer` 3.5 / 4 / 4.5 / 5.5 [3.0–8.4];
+  `chd` 2 / 3 / 4 / 7 [1.4–11.6];
+  `diabetes` 4 / 6 / 9 / 13 [2.9–25.4];
+  `mhlth` 14 / 15.5 / 17 / 20 [12.8–25.4];
+  `bphigh` 15 / 18 / 22 / 30 [11.8–43.0];
+  `csmoking` 6 / 8 / 11 / 17 [4.7–27.8].
+
+## lead_service_lines.geojson — `scripts/build_lead_service_lines.py`
+
+| | |
+|---|---|
+| Inventory | NYC DEP water service line inventory, NYC Open Data **"Lead Service Line Location Coordinates"** `jqfp-uff7` (`https://data.cityofnewyork.us/resource/jqfp-uff7.json`; rows last updated 2026-01-30; DEP updates it about every 6 months). Record and category counts match DEP's own map layer `NYC_WaterConnection_DEP25V11_202601_PG` (`https://services.arcgis.com/at3rDjch5X7i9Bag/arcgis/rest/services/NYC_WaterConnection_DEP25V11_202601_PG_gdb/FeatureServer/0`), the **January 2026** edition behind the NYC Service Line Map. No other service-line inventory dataset is listed on NYC Open Data (`jpn2-huby` is a map view of the same data). |
+| CD1 lots | NYC DCP MapPLUTO (`CD = 301`), `https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0` |
+| Geometry | Reused from `data/acs.geojson` (2020 census tracts). |
+| Definitions | DEP "Water Service Line Map FAQs" (`https://www.nyc.gov/content/leadfree/pages/maps-faq`), the dataset's data dictionary, and DEP's *Lead Service Line Replacement Plan* (2025). |
+
+The inventory has one record per tax lot (BBL) with a tax-lot polygon, the last known
+service-line `material` and the `record_ty` (record type) it is based on.
+
+Material categories, as DEP describes them:
+- **Lead**: "DEP has records indicating that at least a portion of the water service
+  line is lead."
+- **Galvanized Service Line Requiring Replacement** (GRR): DEP's FAQ says "Galvanized"
+  means DEP "has records indicating that at least a portion of the water service line is
+  galvanized steel." DEP's replacement plan counts lead and GRR lines together as "LSLs".
+  "Requiring replacement" is the federal Lead and Copper Rule category: a galvanized
+  line that is or ever was downstream of a lead service line or lead connector, or is
+  downstream of a line of unknown status.
+- **Unknown – Lead Status Unknown**: "DEP has no records of a material type for your
+  service line or there are conflicting records."
+- **Non-Lead**: "DEP has records indicating that your water service line is made of
+  another material type, such as copper or ductile iron."
+- **Non-Applicable** ("N/A"): "there is no operational water service line located at
+  this property."
+
+Record types: *Records* = latest plumbing records filed by a licensed master plumber;
+*Field Inspection* = visual inspection at the meter inside the building; *Excavation* =
+external visual inspection where the line meets the City main; *Statistical
+Analysis/Predictive Model* = modeled likelihood from property age, service size,
+building class and billing records; *Not Verified* = no plumbing records on file;
+*Other* = no operational service line.
+
+Processing:
+- Inventory lots in Brooklyn are queried within the CD1 bounding box. A lot is in CD1 if
+  its BBL is a MapPLUTO `CD = 301` lot (14,818 lots), or, for the 82 inventory BBLs not
+  in MapPLUTO (retired or re-numbered lots), if its representative point is inside CD1.
+  65 MapPLUTO CD1 lots have no inventory record.
+- Each lot goes to the tract containing its representative point. 26 waterfront lots
+  whose point falls just outside the shoreline-clipped tracts (1–90 m) go to the
+  nearest tract.
+- Per tract: `lead`, `galvanized_requiring_replacement`, `unknown`, `non_lead`,
+  `not_applicable` (lot counts). `total_lines` = lead + GRR + unknown + non-lead, i.e.
+  **excluding** Non-Applicable lots.
+- `pct_lead_or_grr` = (lead + GRR) / `total_lines` × 100; `pct_unknown` = unknown /
+  `total_lines` × 100 (one decimal; null if `total_lines` is 0).
+- `small_sample` = `total_lines` < 25. `inventory_date` = "2026-01".
+- Also `tract_label`, `nta_name` from `acs.geojson`.
+- Result of the 2026-10-21 run: 14,835 CD1 lots: 2,342 Lead, 18 GRR, 1,870 Unknown,
+  9,882 Non-Lead, 723 Non-Applicable. 16.7% of the 14,112 lots with a service line are
+  lead or GRR and 13.3% unknown.
+- `pct_lead_or_grr` by tract runs from 0 to 29.2%. Suggested breaks: 5 / 10 / 15 / 20
+  (classes <5, 5–10, 10–15, 15–20, ≥20 hold 11, 6, 11, 14 and 12 tracts).
+
+Caveats:
+- Counts are **tax lots, not service lines or people**. DEP's data does not account for
+  multiple service lines or addresses on one BBL, and condos appear once under their
+  billing BBL. Tracts dominated by large lots (NYCHA campuses, parks, industrial areas)
+  have few lots, so their percentages rest on small numbers: 36047049301 has 2 lots,
+  36047048900 has 4 and 36047058902 has 13.
+- Lead lines are mostly in older 1–4 family buildings, so a high share of lots does not
+  mean a high share of residents.
+- Most classifications come from historical plumbing records, not inspection. DEP says
+  it cannot confirm the recorded material covers the whole length of a line, and its
+  plan notes that many lines recorded as lead have turned out not to be.
+- The inventory is a snapshot; lines replaced since January 2026 are not reflected.
+
+## cso_outfalls.geojson — `scripts/build_cso_outfalls.py`
+
+| | |
+|---|---|
+| Locations | NYC DEP **"Citywide Outfalls"**, NYC Open Data `8rjn-kpsh` (updated 2025-12-18), rows with `outfall_ty = 'CSO'`. The same data is republished by MOCEJ as the EJNYC "Combined Sewer Overflow (CSO) Outfalls" layer. |
+| Overflow counts and volumes | NYC DEP, *Fourteen Wastewater Resource Recovery Facilities' SPDES Permits, Best Management Practices Annual Report* for **calendar year 2025** (dated 2026-04-28): `https://www.nyc.gov/assets/dep/downloads/pdf/water/stormwater/spdes-bmp-cso-annual-report-2025.pdf`, Appendix 14.1 "Table – CSO Discharge Summary for CY 2025 Checklist". The outfall inventory in the same report supplies the receiving-water names. |
+| Detection method | NYS DEC **"Combined Sewer Overflows (CSOs): Beginning 2013"**, data.ny.gov `ephi-ffu6` (last updated 2020-11-11). This is the table behind DEC's "Combined Sewer Overflows (CSOs) Map" (`i8hd-rmbi`). Both are on data.ny.gov, not NYC Open Data. |
+
+Why these sources: DEC's CSO dataset has outfall points and a "Number of Overflow Events"
+column, but every NYC DEP row says "Visit facility website" / "Real-time waterbody advisory".
+Its data dates from 2015, and some of its receiving-water names are wrong (for example, it
+places NCB-019 and NCQ-029 in the "East River"). NYC Open Data has no CSO dataset with
+overflow frequencies. The only per-outfall frequency and volume figures found are the modeled
+annual figures in DEP's BMP annual report, so that report is parsed with `pdftotext`.
+
+Selection:
+- Every DEP CSO outfall within **CD1 + 500 m** (not the usual 200 m).
+- Plus every outfall whose receiving water is Newtown Creek or a tributary (Dutch Kills,
+  Whale Creek, Maspeth Creek, English Kills, East Branch), however far it is from CD1. This
+  adds BB-009, BB-026 and BB-040 at the head of Dutch Kills and NCQ-077 at the head of
+  Maspeth Creek, 530–870 m from CD1.
+- Manhattan-bank East River outfalls (NCM-*) are excluded, though some lie just beyond 500 m.
+- Queens-bank outfalls on Newtown Creek and Dutch Kills (Bowery Bay WRRF's BB-* and Newtown
+  Creek WRRF's NCQ-*) are included.
+- Result: **36 outfalls**. 24 drain to the Newtown Creek WRRF and 12 to the Bowery Bay WRRF.
+  By receiving water: East River 13, Newtown Creek 12, Dutch Kills 6, Wallabout Channel 2,
+  and 1 each in Whale Creek, English Kills and Maspeth Creek.
+
+Properties:
+- `outfall_id`: DEP id.
+- `name`: DEP location, title-cased.
+- `receiving_water`: from the BMP inventory, falling back to DEP's layer.
+- `operator`: "NYC DEP".
+- `facility`: the WRRF drainage area.
+- `overflow_events`, `overflow_volume_mg`: modeled CSO events and annual CSO volume (million
+  gallons) for CY2025, as printed in Appendix 14.1.
+- `overflow_period` = "Calendar year 2025".
+- `detection`: these figures come from DEP's InfoWorks ICM collection-system model, driven by
+  NOAA/NSSL radar rainfall estimates (QPE). They are not metered.
+- `link`: the BMP report.
+- `source`.
+- Extras:
+  - `overflow_events_prev_year`, `overflow_volume_mg_prev_year` (CY2024, from the same
+    table)
+  - `bmp_outfall_id`
+  - `dec_cso_id`
+  - `dec_detection_method`: DEC's 2015 "Discharge Activation Type", either "Model" or
+    "Monitoring"
+  - `outfall_size`
+  - `distance_to_cd1_m`
+  - `note`
+
+Results:
+- CY2025 events range from 0 to 47 per outfall. NCQ-077 has 47, NCB-083 41, BB-009 38 and
+  NCQ-029 34.
+- Volumes range from 0 to 360 MG. The largest are NCB-014 (Kent Ave, Wallabout Channel,
+  360 MG), NCQ-077 (326), NCB-083 (251) and NCB-015 (131).
+- The 35 outfalls with figures total about 1,290 MG.
+
+Caveats:
+- All counts and volumes are **model estimates**, not measurements. They depend on that
+  year's rainfall, and DEP warns that its model updates make figures "not directly
+  comparable" between years. For example, BB-004 goes from 1 event in 2024 to 28 in 2025.
+- Volumes are printed to the nearest million gallons, so 0 means less than about 0.5 MG,
+  not "no overflow".
+- **ID crosswalk:** DEP's outfall layer and the BMP report number two Greenpoint outfalls
+  differently. They are matched by location:
+  - Layer NCB-088 "Huron Street (Reg. B-12)" = BMP NCB-027 "East River & Huron Street,
+    Reg #B-12". DEC's NY0026204-027 point is within 1 m of it.
+  - Layer NCB-084 "Commercial St" = BMP NCB-023 "Newtown Creek & Franklin Street,
+    Reg #B-16". DEC's NY0026204-023 point is about 25 m away.
+  - DEC's own NY0026204-088 is a different point on the East Branch (40.7201, −73.9239).
+    It is not in DEP's layer or the BMP table and is not mapped.
+- NCB-001 is the Newtown Creek WRRF's main treated-effluent outfall. DEP's layer and DEC's
+  dataset list it as a CSO outfall, but it has no BMP overflow row, so its overflow fields
+  are null.
+- BB-049 ("Newtown Creek & 21st Street"; 0 events in 2024 and 2025) has no coordinates in
+  DEP's layer or DEC's dataset, so it is not mapped.
+- Receiving-water names follow the BMP inventory. NCB-019 and NCB-083 at the
+  Metropolitan Ave head of the East Branch are listed there as "Newtown Creek".
+- The Newtown Creek CSO storage tunnel and other Long Term Control Plan projects for the
+  four largest outfalls (BB-026, NCQ-077, NCB-083, NCB-015) are not yet in service. Counts
+  will change as they come online.
+
+## harbor_water_quality.geojson — `scripts/build_harbor_water_quality.py`
+
+| | |
+|---|---|
+| Source | NYC Open Data **"Harbor Water Quality"**, `5uug-f49n` (NYC DEP Harbor Survey Monitoring program, Marine Sciences Section; updated 2026-10-06). Data runs through **2025-12-16**. |
+| Standards | 6 NYCRR **703.3** (dissolved oxygen) and **703.4** (coliforms, enterococci), as currently in force (last amended 2023-10-18). Classifications are from 6 NYCRR Part 890: the East River is **Class I**, and Newtown Creek and its tributaries are **Class SD**. DEC's Newtown Creek Use Attainability Analysis (2026-09-09, `https://dec.ny.gov/sites/default/files/2026-09/newtowncreek_uaa_fca.pdf`) confirms both. DEC proposed reclassifying Newtown Creek from SD to I on 2026-09-16. Comments close 2026-11-30, and the change is not adopted. |
+
+Station positions: the dataset has no station table, and no separate DEP station-location
+dataset was found on NYC Open Data, data.ny.gov or ArcGIS Online. Instead, each row's
+`lat`/`long` is used:
+- 2016–2020: nominal station coordinates.
+- 2021–2022: per-visit GPS fixes. About a third of the 2021 rows have lat and long swapped.
+- Since late 2022: blank.
+
+Each station's point is the median of its valid recorded positions since 2016. Swapped pairs
+are corrected, and values outside the harbor (such as `-74`/`41` or 0) are dropped.
+`position_basis` gives the count. No coordinates were typed in.
+
+Selection:
+- Stations sampled since 2021-01-01 whose point lies within 1 km of CD1. The next-nearest
+  active stations (Gowanus GC3–GC6) are about 3 km away.
+- Result: **7 stations**:
+  - E2: East River off Greenpoint, near the Newtown Creek mouth, 670 m from CD1.
+  - NC3, NC2, NC1: Newtown Creek main channel.
+  - NC0: English Kills.
+  - NC0B: East Branch.
+  - NC0A: East Branch. Sampled 2019 to May 2022, then replaced by NC0B about 200 m away.
+    It is kept with `active: false`, a `note`, and its own period (2019–2021).
+- `waterbody` is assigned from each station's position, not from a DEP label. The dataset
+  has none.
+
+Period: **2023–2025**, the three most recent complete calendar years. All active stations
+were sampled throughout: about 53 dates a year at NC stations and about 31 at E2. Summer
+visits are roughly twice weekly; winter visits are monthly.
+
+Processing (per station, over the period):
+- `n_samples` = sampling dates (rows) in the period.
+- `fecal_coliform_geomean`, `enterococci_geomean`: geometric mean (cells/100 mL) of all top
+  and bottom results. Values with commas are parsed. Results flagged `<`, `>` or `E`
+  (estimated) are used at their reported value, so the means are approximate at the
+  extremes.
+- `do_mean_mg_l`: mean of all top and bottom DO values. For each depth, the value is the
+  Winkler titration result, or else the CTD probe, or else the YSI probe; DEP's extra
+  summer runs report YSI only. Winkler and CTD agree to within about 0.2–0.3 mg/L on
+  average.
+- `pct_do_below_standard`: share of DO values below the acute standard for the station's
+  class, each depth counted separately:
+  - Class I (E2): "shall not be less than 4.0 mg/L at any time".
+  - Class SD (NC*): "Acute: shall not be less than 3.0 mg/L at any time".
+  - `do_standard_mg_l` and `do_standard` give the value used.
+  - `pct_do_below_4_8` gives the share below 4.8 mg/L for comparison. That is the SA/SB/SC
+    chronic daily-average standard, and the one Newtown Creek would face if it is ever
+    reclassified to SB/SC.
+- `water_quality_class`: compares the period geomean of fecal coliform with 703.4(b). For
+  Class I and SD waters this says "the monthly geometric mean, from a minimum of five
+  examinations, shall not exceed 200" per 100 mL. The result reads "Meets … (geomean ≤200 per
+  100 mL)" or "Exceeds … (>200)". It does **not** call the water "swimmable":
+  - Class SD has no primary-contact use and no enterococci standard.
+  - Class I is protected for secondary contact, with an enterococci 30-day geomean ≤72.
+  - DEP's Harbor Survey reports use fecal coliform ≤200 as their historical swimmable
+    benchmark.
+- `fecal_months_evaluated` / `fecal_months_over_200`: a closer check on the monthly form of
+  the standard. They count months with at least 5 surface results, and those whose geomean
+  is above 200. Only summer months qualify, about 3–6 per station.
+- Extras: `water_class`, `n_fecal_results`, `n_enterococci_results`, `n_do_results`,
+  `active`.
+
+Results, 2023–2025:
+
+| Station | Fecal coliform geomean (/100 mL) | Enterococci geomean (/100 mL) | DO mean (mg/L) | % DO below standard |
+|---|---|---|---|---|
+| E2 | 68 | 14 | 6.5 | 2% (<4.0) |
+| NC3 | 280 | 42 | 5.9 | 2% (<3.0) |
+| NC2 | 352 | 55 | 5.6 | 9% |
+| NC1 | 438 | 67 | 5.2 | 17% |
+| NC0B | 834 | 113 | 4.8 | 25% |
+| NC0 | 519 | 121 | 3.9 | 39% |
+| NC0A (2019–2021) | 1,374 | 84 | 5.7 | 14% |
+
+E2 meets the fecal standard. All Newtown Creek stations exceed it.
+
+Caveats:
+- Pooling top and bottom results and taking a geomean over three years smooths over
+  wet-weather spikes. Single results reach 182,000 cells/100 mL.
+- DEP runs in-stream aeration systems in English Kills and the East Branch, which raise DO
+  at NC0/NC0A/NC0B.
+- A small number of DO values are 0.0 mg/L (2 of 1,750 in 2023–2025). They are kept as
+  reported.

@@ -197,6 +197,26 @@ footer {
     height: auto;
 }
 
+/* the map layers tab scrolls when its buttons don't fit the window */
+.tabs.dlayer.active {
+    overflow-y: auto;
+}
+
+/* options for the active data-layer, eg: the health condition picker */
+.dlayer .layer-options {
+    display: none;
+    margin: -5px 0 15px;
+    font-size: 1.3em;
+    color: #696969;
+}
+
+.dlayer .layer-options select {
+    display: block;
+    max-width: 100%;
+    font-family: inherit;
+    font-size: 1em;
+}
+
 .tabs p {
     font-size: 1.3em;
     line-height: 1.5em;
@@ -238,7 +258,7 @@ footer {
     border-radius: 25px;
     border:1px solid #9d9d9d;
     color:#9d9d9d;
-    margin: 10px 5px 25px 0px;
+    margin: 10px 5px 15px 0px;
 }
 
 /* initial button state */
@@ -377,6 +397,7 @@ div.dlayer-tooltip {
     }
 
     .menu.tabs.dlayer .env,
+    .menu.tabs.dlayer .air,
     .menu.tabs.dlayer .ngh,
     .menu.tabs.dlayer .ind,
     .menu.tabs.dlayer .nextsteps {

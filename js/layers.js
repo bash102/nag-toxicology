@@ -2,7 +2,7 @@ var app = app || {};
 
 // Definitions for the map's data-layers.
 // Each layer is a GeoJSON file in data/ that is drawn with Leaflet using the
-// styles in app.styles (ported from the CartoCSS in mss/).
+// styles in app.styles (ported from the original CartoCSS).
 app.layers = (function(){
 
   var styles = app.styles;

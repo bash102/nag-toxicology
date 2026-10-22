@@ -474,16 +474,19 @@ app.map = (function(w, d, $, H) {
         });
     };
 
-    // fills the health condition picker with the measures defined in app.styles
+    // fills each data-layer's measure picker, eg: health conditions, with the measures in app.styles.layerMeasures
     function initLayerOptions() {
-        var measures = app.styles.healthMeasures,
-            $select = $('#health-measure');
+        $('.layer-options').each(function() {
+            var id = $(this).attr('data-layer'),
+                measures = app.styles.layerMeasures[id],
+                $select = $(this).find('select');
 
-        Object.keys(measures).forEach(function(key) {
-            $select.append($('<option>').val(key).text(measures[key].label));
+            Object.keys(measures).forEach(function(key) {
+                $select.append($('<option>').val(key).text(measures[key].label));
+            });
+
+            app.state[id] = $select.val();
         });
-
-        app.state.health_conditions = $select.val();
     }
 
     /* get it all going! */

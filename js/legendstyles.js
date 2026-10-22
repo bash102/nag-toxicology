@@ -149,7 +149,7 @@ app.legends = (function(){
     // depends on the health condition picked in the map layers menu
     health_conditions : function() {
       var styles = app.styles,
-          measure = styles.healthMeasures[app.state.health_conditions] || styles.healthMeasures.casthma;
+          measure = styles.healthMeasures[styles.selectedMeasure('health_conditions', styles.healthMeasures)];
 
       return {
         title : "Health Conditions",

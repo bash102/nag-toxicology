@@ -193,8 +193,13 @@ app.styles = (function(){
         csmoking: { label: 'Smoking', breaks: [6, 8, 11, 17] }
       };
 
+  // the measure picked for a data-layer, or its first measure
+  function selectedMeasure(id, measures) {
+    return measures[app.state[id]] ? app.state[id] : Object.keys(measures)[0];
+  }
+
   function healthConditions(feature) {
-    var measure = healthMeasures[app.state.health_conditions] ? app.state.health_conditions : 'casthma';
+    var measure = selectedMeasure('health_conditions', healthMeasures);
     return {
       fillColor: breakColor(feature.properties[measure], healthMeasures[measure].breaks, healthColors, '#ffffff'),
       fillOpacity: 0.7,
@@ -252,6 +257,10 @@ app.styles = (function(){
   }
 
   return {
+    selectedMeasure: selectedMeasure,
+    layerMeasures: {
+      health_conditions: healthMeasures
+    },
     csoColors: csoColors,
     csoBreaks: csoBreaks,
     csoOutfalls: csoOutfalls,

@@ -3,7 +3,13 @@ var app = app || {};
 app.interaction = (function(d, w, $) {
     // This module creates UI to map interactions on DOM elements
 
+    // matches the small screen layout in css/style.css
+    var smallScreen = w.matchMedia('(max-width: 768px)');
+
     function addToolTips() {
+        // touch screens show tooltips on tap, which gets in the way of the buttons
+        if (w.matchMedia('(hover: none)').matches) return;
+
         // add jquery UI tooltips
         // we could probably do this without jQuery UI...
         $('.dlayer').tooltip({
@@ -64,7 +70,12 @@ app.interaction = (function(d, w, $) {
 
     // sets the height of the left UI & .menu.tabs to fit the user's browser window
     function setLeftUIheight() {
-        
+        // on small screens the left UI is a drawer that scrolls as a whole
+        if (smallScreen.matches) {
+            $('.ui-left, .menu.tabs').css('height', '');
+            return;
+        }
+
         var wh = $(w).innerHeight(),
               fh = $('footer').innerHeight(),
               hh = $('.menu.header').innerHeight(),
@@ -111,26 +122,32 @@ app.interaction = (function(d, w, $) {
             });
         });
 
-        // check screen size before applying active classs
-        $(w).on('resize', checkScreenWidth )
+        // small screens: open & close the menu drawer and the legend
+        $('#menu-toggle').on('click', function() {
+            toggleOpen('menu-open', $(this));
+        });
+
+        $('#legend-toggle').on('click', function() {
+            toggleOpen('legend-open', $(this));
+        });
+
+        // close the drawer when the user goes back to the map
+        $('#map').on('click', function() {
+            toggleOpen('menu-open', $('#menu-toggle'), false);
+        });
+
+        // show the legend when a data-layer is turned on
+        $('.data-layer').on('click', function() {
+            if (smallScreen.matches && $(this).hasClass('active')) {
+                toggleOpen('legend-open', $('#legend-toggle'), true);
+            }
+        });
     }
 
-    function checkScreenWidth() {
-        if (w.innerWidth <= 420 ) {
-
-            $('#dlayer').removeClass('active');
-            $('.tabs.dlayer').removeClass('active');
-
-            $('#about').addClass('active');
-            $('.tabs.about').addClass('active');
-            
-        } else {
-            $('#dlayer').addClass('active');
-            $('.tabs.dlayer').addClass('active');
-
-            $('#about').removeClass('active');
-            $('.tabs.about').removeClass('active');
-        }
+    // toggles a body class that opens a small screen panel, keeping its button's aria-expanded in sync
+    function toggleOpen(className, $button, open) {
+        $('body').toggleClass(className, open);
+        $button.attr('aria-expanded', $('body').hasClass(className));
     }
 
     // get it all going...
@@ -138,7 +155,6 @@ app.interaction = (function(d, w, $) {
         addToolTips();
         setLeftUIheight();
         addListeners();
-        checkScreenWidth();
     };
 
     return {

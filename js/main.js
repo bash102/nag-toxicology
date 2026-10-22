@@ -190,7 +190,7 @@ app.map = (function(w, d, $, H) {
             return '<h4>' + escapeHtml(fieldLabels[field] || humanize(field)) + '</h4><p>' + formatValue(field, properties[field], source) + '</p>';
         }).join('');
 
-        return '<div class="map-popup-content">' + html + '</div>';
+        return '<div class="map-popup-content">' + (html || '<p>No data for this area.</p>') + '</div>';
     }
 
     // joins the walking tour stops into a line, in the order of their "stop" property

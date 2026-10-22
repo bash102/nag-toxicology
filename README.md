@@ -26,7 +26,10 @@ The map loads its data with XHR, so serve the folder over HTTP rather than openi
 python3 -m http.server 8000
 ```
 
-Then visit http://localhost:8000. Any static host works, for example GitHub Pages.
+Then visit http://localhost:8000.
+
+## Publishing
+`.github/workflows/pages.yml` publishes the map to GitHub Pages whenever `main` changes, at https://bash102.github.io/nag-toxicology/. To turn it on the first time, open the repository's **Settings > Pages** and set **Source** to **GitHub Actions**, then re-run the workflow from the **Actions** tab (or push to `main`).
 
 ## Dependencies
 Loaded from CDNs in `index.html`:

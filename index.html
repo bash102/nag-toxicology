@@ -107,9 +107,16 @@
                     <button class="data-layer" type="button" id="health_conditions" title="Health Conditions">
                         <i class="fa fa-heartbeat fa-2x"></i>
                     </button>
+                    <button class="data-layer" type="button" id="cancer_mapping" title="Cancer Cases">
+                        <i class="fa fa-user-md fa-2x"></i>
+                    </button>
                     <div class="layer-options" data-layer="health_conditions">
                         <label for="health-measure">Health condition:</label>
                         <select id="health-measure"></select>
+                    </div>
+                    <div class="layer-options" data-layer="cancer_mapping">
+                        <label for="cancer-measure">Cancer type:</label>
+                        <select id="cancer-measure"></select>
                     </div>
                 </div>
                 <div class="ind">
@@ -187,6 +194,13 @@
                 <h3>Health Conditions</h3>
                 <p>
                     This layer shows the estimated share of adults in each census tract who have asthma, COPD, cancer (other than skin cancer), coronary heart disease, diabetes or high blood pressure, who have frequent poor mental health, or who smoke. Pick a condition from the menu under the button. The estimates come from the CDC's <a target="_blank" href="https://www.cdc.gov/places/">PLACES</a> project (2025 release, 2023 data). They are <strong>modeled estimates, not counts of diagnoses</strong>: the CDC combines a national health survey with each tract's population, age, race and income to predict local rates. They mostly reflect who lives in a tract, such as its age mix, rather than measured local exposures, and they are not adjusted for age.
+                </p>
+                <h3>Cancer Cases</h3>
+                <p>
+                    This layer compares the number of people diagnosed with cancer from 2011 to 2015 with the number expected, from the New York State Department of Health's <a target="_blank" href="https://health.data.ny.gov/Health/Cancer-Mapping-Data-2011-2015/y4pv-ib8r">Environmental Facilities and Cancer Mapping</a> data. Pick a cancer type from the menu under the button. The expected number is what the area would have if its residents got cancer at the same rates as New Yorkers statewide of the same age and sex. It does not account for smoking, other personal risk factors or income. Areas are census block groups; small block groups were combined by DOH to protect privacy.
+                </p>
+                <p>
+                    Small areas have few cases, so their numbers swing up and down by chance. A single case can make a rare cancer look many times higher than expected. DOH outlined areas where cases were at least 50% higher or lower than expected and unlikely to be due to chance; on this map those areas have a thick outline. Even then, <strong>more cases than expected does not mean the cause is local pollution.</strong> Cancer develops over many years, people move, and most cancers have many causes. Across Greenpoint and Williamsburg as a whole, cancer cases were below the expected number in 2011-2015.
                 </p>
                 <h3>Median Household Income</h3>
                 <p>

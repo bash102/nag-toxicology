@@ -155,9 +155,14 @@ app.map = (function(w, d, $, H) {
         });
     }
 
+    // a layer option that is either a value or a function returning one, eg: fields for the selected measure
+    function resolve(option) {
+        return typeof option === 'function' ? option() : option;
+    }
+
     function formatValue(field, value, source) {
-        var valueLabels = source.valueLabels,
-            percentFields = source.percentFields || [];
+        var valueLabels = resolve(source.valueLabels),
+            percentFields = resolve(source.percentFields) || [];
 
         if (valueLabels && valueLabels[field] && valueLabels[field][value]) {
             return escapeHtml(valueLabels[field][value]);
@@ -176,7 +181,7 @@ app.map = (function(w, d, $, H) {
 
     // builds the info-window content from the layer's interactivity fields
     function popupContent(fields, properties, source) {
-        var fieldLabels = source.fieldLabels || {};
+        var fieldLabels = resolve(source.fieldLabels) || {};
 
         var html = fields.filter(function(field) {
             var value = properties[field];
@@ -205,8 +210,7 @@ app.map = (function(w, d, $, H) {
 
     // creates a data-layer that downloads its GeoJSON the first time it is shown
     function createSubLayer(source) {
-        var fields = source.interactivity ? source.interactivity.replace(/ /g, '').split(",") : [],
-            group = L.featureGroup(),
+        var group = L.featureGroup(),
             geojson = null,
             request = null,
             visible = false;
@@ -237,8 +241,12 @@ app.map = (function(w, d, $, H) {
                         return L.circleMarker(latlng, source.marker(feature, map_object.getZoom()));
                     },
                     onEachFeature: function(feature, layer) {
-                        if (fields.length) {
-                            layer.bindPopup(popupContent(fields, feature.properties, source), {
+                        if (source.interactivity) {
+                            // built when opened, so it reflects the measure currently picked
+                            layer.bindPopup(function() {
+                                var fields = resolve(source.interactivity).replace(/ /g, '').split(",");
+                                return popupContent(fields, feature.properties, source);
+                            }, {
                                 maxWidth: 240,
                                 maxHeight: 220
                             });

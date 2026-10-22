@@ -256,11 +256,49 @@ app.styles = (function(){
     };
   }
 
+  // NYS DOH cancer mapping, observed / expected cases; keys match data/cancer_mapping.geojson
+  // the outer breaks are DOH's own 50% thresholds for higher (1.5) and lower (1 / 1.5) than expected
+  var cancerColors = ['#4575b4', '#91bfdb', '#f7f7f7', '#fc8d59', '#d73027'],
+      cancerBreaks = [0.67, 0.9, 1.1, 1.5],
+      cancerMeasures = {
+        all: { label: 'All cancers combined' },
+        lung: { label: 'Lung and bronchus' },
+        breast: { label: 'Female breast' },
+        prostate: { label: 'Prostate' },
+        colorectal: { label: 'Colon and rectum' },
+        bladder: { label: 'Urinary bladder' },
+        kidney: { label: 'Kidney and renal pelvis' },
+        leukemia: { label: 'Leukemia' },
+        nhl: { label: 'Non-Hodgkin lymphoma' },
+        liver: { label: 'Liver and intrahepatic bile duct' },
+        pancreas: { label: 'Pancreas' },
+        thyroid: { label: 'Thyroid' }
+      };
+
+  function cancerMapping(feature) {
+    var key = selectedMeasure('cancer_mapping', cancerMeasures),
+        sig = feature.properties[key + '_sig'];
+
+    return {
+      fillColor: breakColor(feature.properties[key + '_ratio'], cancerBreaks, cancerColors, '#ffffff'),
+      fillOpacity: 0.75,
+      // outline the areas DOH flagged as higher or lower than expected
+      color: sig === 'higher' ? '#67001f' : sig === 'lower' ? '#053061' : '#666666',
+      weight: sig === 'higher' || sig === 'lower' ? 2 : 0.5,
+      opacity: sig === 'higher' || sig === 'lower' ? 0.9 : 0.5
+    };
+  }
+
   return {
     selectedMeasure: selectedMeasure,
     layerMeasures: {
-      health_conditions: healthMeasures
+      health_conditions: healthMeasures,
+      cancer_mapping: cancerMeasures
     },
+    cancerColors: cancerColors,
+    cancerBreaks: cancerBreaks,
+    cancerMeasures: cancerMeasures,
+    cancerMapping: cancerMapping,
     csoColors: csoColors,
     csoBreaks: csoBreaks,
     csoOutfalls: csoOutfalls,

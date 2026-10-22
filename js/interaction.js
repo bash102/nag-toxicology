@@ -72,7 +72,9 @@ app.interaction = (function(d, w, $) {
               $uiLeft = $('.ui-left'),
               uiLeftPaddingTop = $uiLeft.css('padding-top').replace('px', ''),
               $menuTabs = $('.menu.tabs'),
-              mtHeight = wh - hh - tnh - fh - uiLeftPaddingTop;
+              // leave room for the tabs' own padding so their content scrolls instead of running under the footer
+              mtPadding = parseInt($menuTabs.css('padding-top'), 10) + parseInt($menuTabs.css('padding-bottom'), 10),
+              mtHeight = wh - hh - tnh - fh - uiLeftPaddingTop - mtPadding;
 
         $uiLeft.height(wh);
         $menuTabs.height(mtHeight);

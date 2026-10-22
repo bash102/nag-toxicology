@@ -161,6 +161,22 @@ app.legends = (function(){
       };
     },
 
+    // depends on the cancer type picked in the map layers menu
+    cancer_mapping : function() {
+      var styles = app.styles,
+          measure = styles.cancerMeasures[styles.selectedMeasure('cancer_mapping', styles.cancerMeasures)],
+          labels = ['Much lower (less than 0.67)', 'Lower (0.67 - 0.9)', 'About as expected (0.9 - 1.1)', 'Higher (1.1 - 1.5)', 'Much higher (1.5 or more)'];
+
+      return {
+        title : "Cancer Cases",
+        subtitle : measure.label + ", observed / expected, 2011-2015. Thick outlines: areas NYS DOH flagged as higher or lower",
+        type : 'polygon',
+        items : labels.map(function(label, i) {
+          return { color : styles.cancerColors[i], label : label };
+        })
+      };
+    },
+
     lead_service_lines : {
       title : "Lead Water Service Lines",
       subtitle : "% of lots with lead or galvanized lines needing replacement, 2026",

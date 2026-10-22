@@ -7,6 +7,11 @@ app.layers = (function(){
 
   var styles = app.styles;
 
+  // the cancer type picked for the cancer mapping layer
+  function cancerKey() {
+    return styles.selectedMeasure('cancer_mapping', styles.cancerMeasures);
+  }
+
   return {
       sublayers: [{
           name: 'acs_pop',
@@ -113,6 +118,36 @@ app.layers = (function(){
             bphigh: "Adults with high blood pressure",
             mhlth: "Adults with frequent poor mental health",
             csmoking: "Adults who smoke"
+          }
+      }, {
+          name: 'cancer_mapping',
+          choropleth: true,
+          url: 'data/cancer_mapping.geojson',
+          style: styles.cancerMapping,
+          // fields for the cancer type picked in the map layers menu
+          interactivity: function() {
+            var key = cancerKey();
+            return [key + '_obs', key + '_exp', key + '_ratio', key + '_sig', 'total_population'].join(',');
+          },
+          fieldLabels: function() {
+            var key = cancerKey(),
+                labels = {},
+                name = styles.cancerMeasures[key].label;
+            labels[key + '_obs'] = name + ': cases diagnosed';
+            labels[key + '_exp'] = 'Cases expected for this population';
+            labels[key + '_ratio'] = 'Observed / expected';
+            labels[key + '_sig'] = 'NYS DOH assessment';
+            labels.total_population = 'Population';
+            return labels;
+          },
+          valueLabels: function() {
+            var labels = {};
+            labels[cancerKey() + '_sig'] = {
+              higher: 'Part of an area with more cases than expected',
+              lower: 'Part of an area with fewer cases than expected',
+              'not significant': 'Not part of a flagged area'
+            };
+            return labels;
           }
       }, {
           name: 'cso_outfalls',

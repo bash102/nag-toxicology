@@ -600,3 +600,112 @@ Caveats:
   at NC0/NC0A/NC0B.
 - A small number of DO values are 0.0 mg/L (2 of 1,750 in 2023–2025). They are kept as
   reported.
+
+## cancer_mapping.geojson — `scripts/build_cancer_mapping.py`
+
+| | |
+|---|---|
+| Counts | NYS Department of Health, New York State Cancer Registry, **"Cancer Mapping Data: 2011-2015"**, health.data.ny.gov dataset `y4pv-ib8r` (`https://health.data.ny.gov/d/y4pv-ib8r`), published 2018-08-17. It is a zip file (`NYSDOH_CancerMapping_Data_2011_2015.zip`, blob `313b3230-e2b0-4ee9-9063-dc30c6c04264`) holding `NYSDOH_CancerMapping_Data_2011_2015.xlsx`, `NYSDOH_CancerMapping_Crosswalk_2011_2015.xlsx`, the Overview PDF and the Data Dictionary PDF. These are the data behind DOH's Environmental Facilities and Cancer Map (Public Health Law §2401-B). DOH says the cancer data are provisional as of December 2017. |
+| Other catalog entry | `ybxz-mnf5` ("updated 2025-04-08") is **not** a newer release. It is a healthdata.gov (HHS) catalog record, type `href`, harvested from health.data.ny.gov's data.json on 2025-04-08. It has no data of its own and points back to `y4pv-ib8r` (its metadata lists `Common-Core_Unique-Identifier` = `y4pv-ib8r` and `Last-Update` 2018-08-17). `y4pv-ib8r` is the authoritative source. An older release, 2005–2009, is `cw3n-fkji`. |
+| Geometry | The dataset ships no shapes. U.S. Census Bureau TIGER/Line 2010 block groups for Kings County: `https://www2.census.gov/geo/tiger/TIGER2010/BG/2010/tl_2010_36047_bg10.zip` |
+| Documentation | Dataset attachments "NYSDOH Cancer Mapping Overview.pdf" and "NYSDOH Cancer Mapping DataDictionary.pdf" (2018); DOH's *About the Data* and *Frequently Asked Questions* pages under `https://www.health.ny.gov/statistics/cancer/environmental_facilities/mapping/about/`. www.health.ny.gov returned 403 from this environment, so the pages were read from the identical `healthweb-back.health.ny.gov` host (About the Data revised April 2026; FAQ revised July 2018). |
+
+Geography: 2010 census block groups. To protect confidentiality, DOH merged neighbouring
+block groups until each area had at least 6 male and 6 female cancer cases in total (12
+cases where all cases were of one sex, e.g. prisons). Statewide, 15,464 block groups
+became 13,513 areas. Merged areas have a custom ID such as `36047DOH0208`, and the
+crosswalk lists their 2010 block groups. Merging is DOH's only confidentiality measure:
+no counts are suppressed, and zeros are real zeros.
+
+Cancer types: 23 sites, plus "other" and the total. The keys and DOH labels (from the
+data dictionary; ICD-O-3 codes are in the file's `metadata.icd_o_3`) are:
+- `all`: all cancers combined
+- `bladder`: urinary bladder, including in situ
+- `bone`: bones and joints
+- `brain`: brain and other nervous system
+- `breast`: female breast
+- `colorectal`: colon and rectum
+- `esophagus`, `larynx`, `mesothelioma`, `ovary`, `pancreas`, `prostate`, `stomach`,
+  `testis`, `thyroid`
+- `kidney`: kidney and renal pelvis
+- `leukemia`: leukemia
+- `liver`: liver and intrahepatic bile duct
+- `lung`: lung and bronchus
+- `nasal`: nasal cavity and nasopharynx
+- `nhl`: non-Hodgkin lymphoma
+- `oral`: oral cavity and pharynx, excluding nasopharynx
+- `other`: other cancers not specifically listed
+- `soft_tissue`: soft tissue
+- `uterus`: corpus uterus, including uterus NOS
+
+Field meanings, from DOH:
+- **Observed**: newly diagnosed cases from 2011 to 2015 among residents, by address at
+  diagnosis. Every primary tumour is counted.
+- **Expected**: the number of cases the area would have "if the likelihood of being
+  diagnosed with cancer at a given age and gender were uniform throughout the state". That
+  is, statewide age- and sex-specific rates applied to the area's population, so the
+  expected counts are age- and sex-adjusted. They make no adjustment for smoking, other
+  individual risk factors, income or race/ethnicity.
+- **Population**: `total_pop`. The data dictionary says this is the 2010 census
+  population, but the About page says block-group populations for 2011–2015 were estimated
+  from the 2010 census by iterative proportional fitting to county estimates, then
+  averaged. The numbers follow the About page: they sum to 2,595,285 for Kings and
+  19,673,173 statewide, against 2010 census counts of 2,504,700 and 19,378,102.
+- **Highlight**: `highlight_<site>` is 1 if the block group is inside a "higher than
+  expected" highlighted area, −1 if inside a "lower than expected" one, and 0 otherwise.
+  DOH found these areas with the spatial scan statistic (Boscoe et al., *Health & Place*
+  2003, 9(3):273–277):
+  - The scan was limited to locations where observed and expected differ by 50% or more.
+  - The ratio "had to be such that it was unlikely to be a chance occurrence". DOH
+    publishes no p-value threshold.
+  - Areas were capped at 2% of the state population (about 400,000 people).
+  - DOH publishes no highlight for the total or for "other", and no area was highlighted
+    for pancreas, soft tissue or uterus.
+- The data dictionary text still says "between 2005 and 2009" for the observed and
+  expected fields. This is a leftover from the earlier release; the file covers 2011–2015.
+
+Processing:
+- Kings County block groups are dissolved into DOH areas using the crosswalk.
+- Selection keeps the DOH areas with **more than 50% of their land area (TIGER `ALAND10`)
+  inside CD1**. CD1 boundaries follow 2010 tract lines, so every area is either almost
+  entirely inside CD1 (two at 91%, the rest at 98% or more) or under 2% inside. No
+  borderline cases arise.
+- Result: **90 features** (46 single block groups and 44 DOH merged areas). Together they
+  cover 99.7% of CD1, with a 2011–2015 average population of 180,142.
+- Polygons are clipped to the CD1 boundary. TIGER 2010 block groups extend into the East
+  River and Newtown Creek. They are simplified at 1.5 m.
+- Properties:
+  - `geoid`: the DOH area ID, which is the 12-digit 2010 block-group GEOID or the `DOH`
+    code.
+  - `merged_geoid10`: member block groups, for merged areas only.
+  - `total_population`: DOH `total_pop`.
+  - `share_in_cd1`.
+  - For each key: `<key>_obs`; `<key>_exp` (2 decimals); `<key>_ratio` = observed /
+    expected, 2 decimals, null if expected is 0 (none are); and `<key>_sig`.
+- `<key>_sig` comes from DOH's highlight flag: "higher" (1), "lower" (−1) or "not
+  significant" (0). It is **membership in a multi-block-group highlighted area**, not a
+  test of that block group alone. A block group with observed below expected can sit in a
+  "higher" area, and vice versa (DOH FAQ).
+  - `all_sig` and `other_sig` are null because DOH publishes no flag for them.
+  - No significance was computed here. DOH's method is a spatial scan whose p-value
+    threshold is not published, and DOH documents no per-block-group test, so it cannot be
+    reproduced exactly.
+- A top-level `metadata` object gives the labels, ICD-O-3 codes, years, the suppression
+  rule and the field definitions.
+
+Interpretation caveats, from DOH:
+- **Small numbers and chance.** Many block groups have expected counts well below 1 for
+  most sites, so a single case gives a ratio of 5–20 or more. Five-year totals are used
+  because single-year counts "can vary considerably". DOH: "Some cancers occur at the same,
+  or nearly the same, rate in all locations. Any small variations that are seen are likely
+  due to chance."
+- **Not a cause.** The map "cannot prove that something in the environment, including
+  emissions from environmental facilities, causes cancer". Living in a pink area "does not
+  mean that you are more likely to get cancer". Individual risk factors (tobacco, alcohol,
+  physical inactivity, workplace exposures, family history) are not taken into account.
+- **Latency and mobility.** Cancers usually appear 5 to 40 years after exposure, and
+  counts are by residence at diagnosis. People may have lived elsewhere when exposed.
+- **Crude rates.** Crude rates are cases ÷ (population × 5). Unlike observed/expected,
+  they do not account for age structure.
+- Registry data are continuously updated, so these provisional counts may differ from other
+  NYSCR publications.

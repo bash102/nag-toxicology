@@ -25,6 +25,7 @@ STEPS = [
     "build_cso_outfalls",
     "build_harbor_water_quality",
     "build_polluted_points",
+    "build_cancer_mapping",
 ]
 
 if __name__ == "__main__":

@@ -88,9 +88,7 @@ li.nav.active {
 }
 
 footer {
-    position: absolute;
-    bottom: 0px;
-    height: 60px; 
+    height: 60px;
 }
 
 /* Map container */
@@ -165,9 +163,17 @@ footer {
   display: inline-block;  
 }
 
+/* a full-height column: header, nav and footer keep their size and the active tab scrolls */
 .ui.ui-left {
-    max-height: 100%;
+    top: 0;
+    bottom: 0;
     width: 325px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ui-left > * {
+    flex: none;
 }
 
 .menu {    
@@ -191,14 +197,10 @@ footer {
     display: none;
 }
 
-.tabs.active {
+.ui-left > .tabs.active {
     display: block;
-    overflow-y: visible;
-    height: auto;
-}
-
-/* the map layers tab scrolls when its buttons don't fit the window */
-.tabs.dlayer.active {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -362,64 +364,97 @@ div.dlayer-tooltip {
     top: 65px;
 }
 
-/* hide the mobile message on larger screen sizes */
-.mobile-message {
+/* buttons that only show on small screens */
+.mobile-only {
     display: none;
 }
 
 
-/* Media queries for mobile display */
-@media only screen and (max-width: 480px) {
-    /* Don't display the map and related ui elements on mobile */
-    #map-legend-container, #map, .zoombtn {
-        display: none;
+/* Small screens: the map fills the screen, the menu is a drawer and the legend sits at the bottom */
+@media only screen and (max-width: 768px) {
+    #map {
+        left: 0;
     }
 
-    #container {
-        background: hsl(0, 0%, 65%);
+    .mobile-only {
+        display: block;
+        position: absolute;
+        z-index: 6;
+        padding: 8px 12px;
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #333;
+        background: #fff;
+        border: 0;
+        border-radius: 4px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.35);
     }
-    
+
+    #menu-toggle {
+        top: 10px;
+        left: 10px;
+    }
+
+    #legend-toggle {
+        bottom: 24px;
+        right: 10px;
+    }
+
+    /* the left panel slides in from the left and scrolls as a whole */
     .ui.ui-left {
-        position: relative;
+        position: fixed;
+        left: 0;
+        max-width: 88vw;
         display: block;
-        margin: 0 auto;
-        border: none;
-        box-shadow: none;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        transform: translateX(-105%);
+        transition: transform 0.25s ease;
+        z-index: 10;
     }
 
-    #dlayer {
-        cursor: default;
-        background: rgba(0,0,0,0.3);
+    body.menu-open .ui.ui-left {
+        transform: none;
     }
 
-    #dlayer a {
-        color: rgba(0,0,0,0.5);
+    .ui-left .menu {
+        width: auto;
     }
 
-    .menu.tabs.dlayer .env,
-    .menu.tabs.dlayer .air,
-    .menu.tabs.dlayer .ngh,
-    .menu.tabs.dlayer .ind,
-    .menu.tabs.dlayer .nextsteps {
-        display: none !important;
+    .ui-left .tabs {
+        width: auto;
     }
 
-    .menu.tabs.dlayer .mobile-message {
-        display: block;
+    .ui-left > .tabs.active {
+        overflow-y: visible;
     }
 
-/*    #about.nav.about {
-        background: #F2F2F2;
-    }*/
+    #logo {
+        max-width: 100%;
+    }
 
-/*    .menu.tabs.about {
-        display: block;
-    }*/
-}
-
-@media only screen and (max-width: 420px) {
-    /* Don't display the map and related ui elements on mobile */
-    #map-legend-container, #map {
+    /* the legend opens above the legend button */
+    #map-legend-container {
         display: none;
+        top: auto;
+        bottom: 68px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-height: 40vh;
+    }
+
+    body.legend-open #map-legend-container {
+        display: block;
+    }
+
+    /* pinch to zoom instead */
+    .zoombtn {
+        display: none;
+    }
+
+    .leaflet-top.leaflet-right .leaflet-pelias-control.leaflet-bar.leaflet-control {
+        right: 0;
+        top: 0;
     }
 }

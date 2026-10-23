@@ -5,7 +5,9 @@ Requires: python3, shapely, pyproj, pyshp, plus rasterio and numpy for air quali
 sources listed in data/SOURCES.md. Downloads are cached in $NAG_CACHE
 (default ~/.cache/nag-toxicology); delete it to force fresh downloads. The spill
 geocoding step (polluted_points) makes several thousand sequential NYC GeoSearch
-requests on a cold cache and takes 30-90 minutes.
+requests on a cold cache and takes 30-90 minutes. The air-toxics step downloads
+about 2.5 GB of EPA AirToxScreen workbooks on a cold cache; it reads them with
+openpyxl, or ~7x faster if python-calamine is installed.
 """
 import importlib
 import os
@@ -25,6 +27,8 @@ STEPS = [
     "build_cso_outfalls",
     "build_harbor_water_quality",
     "build_polluted_points",
+    "build_cancer_mapping",
+    "build_air_toxics_risk",
 ]
 
 if __name__ == "__main__":

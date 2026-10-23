@@ -176,16 +176,15 @@ app.map = (function(w, d, $, H) {
 
     // builds the info-window content from the layer's interactivity fields
     function popupContent(fields, properties, source) {
-        var fieldLabels = source.fieldLabels || {};
-
-        var html = fields.filter(function(field) {
+        var fieldLabels = source.fieldLabels || {},
+            html = fields.filter(function(field) {
             var value = properties[field];
             return value !== null && value !== undefined && value !== '';
         }).map(function(field) {
             return '<h4>' + escapeHtml(fieldLabels[field] || humanize(field)) + '</h4><p>' + formatValue(field, properties[field], source) + '</p>';
         }).join('');
 
-        return '<div class="map-popup-content">' + html + '</div>';
+        return '<div class="map-popup-content">' + (html || '<p>No data for this area.</p>') + '</div>';
     }
 
     // joins the walking tour stops into a line, in the order of their "stop" property
@@ -205,14 +204,14 @@ app.map = (function(w, d, $, H) {
 
     // creates a data-layer that downloads its GeoJSON the first time it is shown
     function createSubLayer(source) {
-        var fields = source.interactivity ? source.interactivity.replace(/ /g, '').split(",") : [],
-            group = L.featureGroup(),
+        var group = L.featureGroup(),
             geojson = null,
             request = null,
             visible = false;
 
+        // hidden layers are restyled when shown
         function restyle() {
-            if (!geojson) return;
+            if (!geojson || !map_object.hasLayer(group)) return;
             var zoom = map_object.getZoom();
             geojson.eachLayer(function(layer) {
                 var style = source.marker ?
@@ -221,6 +220,12 @@ app.map = (function(w, d, $, H) {
                 layer.setStyle(style);
                 if (style.radius) layer.setRadius(style.radius);
             });
+        }
+
+        // built when opened, so a layer's fields can follow its measure picker
+        function popup(layer) {
+            var fields = typeof source.interactivity === 'function' ? source.interactivity() : source.interactivity;
+            return popupContent(fields.replace(/ /g, '').split(','), layer.feature.properties, source);
         }
 
         function load() {
@@ -237,11 +242,8 @@ app.map = (function(w, d, $, H) {
                         return L.circleMarker(latlng, source.marker(feature, map_object.getZoom()));
                     },
                     onEachFeature: function(feature, layer) {
-                        if (fields.length) {
-                            layer.bindPopup(popupContent(fields, feature.properties, source), {
-                                maxWidth: 240,
-                                maxHeight: 220
-                            });
+                        if (source.interactivity) {
+                            layer.bindPopup(popup, { maxWidth: 240, maxHeight: 220 });
                         }
                     }
                 });
@@ -264,6 +266,7 @@ app.map = (function(w, d, $, H) {
                 load().done(function() {
                     if (visible) {
                         group.addTo(map_object);
+                        restyle();
                         // keep polygons beneath points
                         if (source.marker) group.bringToFront(); else group.bringToBack();
                     }
@@ -413,6 +416,7 @@ app.map = (function(w, d, $, H) {
     $('.data-layer').click(function() {
         var layer = $(this).attr('id');
         hideShow(layer);
+        if ($(this).hasClass('active')) $(d).trigger('layer:shown', layer);
     });
 
     // switch the measure shown by layers with a measure picker, eg: health conditions
@@ -422,6 +426,8 @@ app.map = (function(w, d, $, H) {
 
         app.state[id] = $(this).val();
         sublayers[index].restyle();
+        // an open popup would still show the previous measure's fields
+        map_object.closePopup();
 
         if ($('#legend-' + id).length) {
             removeLegend(id);
@@ -474,16 +480,19 @@ app.map = (function(w, d, $, H) {
         });
     };
 
-    // fills the health condition picker with the measures defined in app.styles
+    // fills each data-layer's measure picker, eg: health conditions, with the measures in app.styles.layerMeasures
     function initLayerOptions() {
-        var measures = app.styles.healthMeasures,
-            $select = $('#health-measure');
+        $('.layer-options').each(function() {
+            var id = $(this).attr('data-layer'),
+                measures = app.styles.layerMeasures[id],
+                $select = $(this).find('select');
 
-        Object.keys(measures).forEach(function(key) {
-            $select.append($('<option>').val(key).text(measures[key].label));
+            Object.keys(measures).forEach(function(key) {
+                $select.append($('<option>').val(key).text(measures[key].label));
+            });
+
+            app.state[id] = $select.val();
         });
-
-        app.state.health_conditions = $select.val();
     }
 
     /* get it all going! */

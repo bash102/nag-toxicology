@@ -149,25 +149,44 @@ app.legends = (function(){
     // depends on the health condition picked in the map layers menu
     health_conditions : function() {
       var styles = app.styles,
-          measure = styles.healthMeasures[app.state.health_conditions] || styles.healthMeasures.casthma;
+          measure = styles.layerMeasures.health_conditions[styles.selectedMeasure('health_conditions')];
 
       return {
         title : "Health Conditions",
         subtitle : measure.label + ", % of adults, 2023 estimates",
         type : 'polygon',
-        items : styles.breakLabels(measure.breaks, '%').map(function(label, i) {
-          return { color : styles.healthColors[i], label : label };
-        }).concat({ color : "#ffffff", label : "No residents" })
+        items : styles.breakItems(measure.breaks, styles.healthColors, '%', "No residents")
       };
+    },
+
+    // depends on the cancer type picked in the map layers menu
+    cancer_mapping : function() {
+      var styles = app.styles,
+          measure = styles.layerMeasures.cancer_mapping[styles.selectedMeasure('cancer_mapping')],
+          words = ['Much lower', 'Lower', 'About as expected', 'Higher', 'Much higher'];
+
+      return {
+        title : "Cancer Cases",
+        subtitle : measure.label + ", observed / expected, 2011-2015. Thick outlines: areas NYS DOH flagged as higher or lower",
+        type : 'polygon',
+        items : styles.breakItems(styles.cancerBreaks, styles.cancerColors, '').map(function(item, i) {
+          return { color : item.color, label : words[i] + ' (' + item.label.toLowerCase() + ')' };
+        })
+      };
+    },
+
+    air_toxics_risk : {
+      title : "Cancer Risk from Air Toxics",
+      subtitle : "Estimated lifetime cases per million people, 2020 (EPA model)",
+      type : 'polygon',
+      items : app.styles.breakItems(app.styles.airToxicsBreaks, app.styles.airToxicsColors, '', "No residents")
     },
 
     lead_service_lines : {
       title : "Lead Water Service Lines",
       subtitle : "% of lots with lead or galvanized lines needing replacement, 2026",
       type : 'polygon',
-      items : app.styles.breakLabels(app.styles.leadBreaks, '%').map(function(label, i) {
-        return { color : app.styles.leadColors[i], label : label };
-      })
+      items : app.styles.breakItems(app.styles.leadBreaks, app.styles.leadColors, '%')
     },
 
     cso_outfalls : {

@@ -7,6 +7,7 @@ Downloads are cached in $NAG_CACHE (default ~/.cache/nag-toxicology) so the
 scripts can be re-run cheaply; delete that directory to force fresh downloads.
 """
 import hashlib
+import io
 import json
 import os
 import time
@@ -26,11 +27,41 @@ DCP = "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services"
 CD_SERVICE = DCP + "/NYC_Community_Districts/FeatureServer/0"
 BUFFER_M = 200.0
 
-UA = "nag-toxicology-data-rebuild/1.0 (+https://github.com/clhenrick/nag-toxicology)"
+UA = "nag-toxicology-data-rebuild/1.0 (+https://github.com/bash102/nag-toxicology)"
 
 # NY State Plane Long Island (US feet) <-> WGS84; and UTM 18N metres for buffering
 _to_m = Transformer.from_crs("EPSG:4326", "EPSG:32618", always_xy=True).transform
 _to_ll = Transformer.from_crs("EPSG:32618", "EPSG:4326", always_xy=True).transform
+
+
+def xlsx_rows(source):
+    """Yield the rows of the first sheet of an .xlsx (a path or bytes) as tuples.
+
+    Uses python-calamine if it is installed, which is several times faster than openpyxl.
+    """
+    try:
+        from python_calamine import CalamineWorkbook
+    except ImportError:
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(source) if isinstance(source, bytes) else source,
+                                    read_only=True)
+        for r in wb.worksheets[0].iter_rows(values_only=True):
+            yield tuple(r)
+        wb.close()
+        return
+    wb = (CalamineWorkbook.from_filelike(io.BytesIO(source)) if isinstance(source, bytes)
+          else CalamineWorkbook.from_path(source))
+    for r in wb.get_sheet_by_index(0).iter_rows():
+        # calamine reads empty cells as "", openpyxl as None
+        yield tuple(None if v == "" else v for v in r)
+
+
+def xlsx_dicts(source):
+    """The rows of an .xlsx as dicts keyed by its header row; whole floats become ints."""
+    rows = xlsx_rows(source)
+    header = next(rows)
+    return [{h: int(v) if isinstance(v, float) and v.is_integer() else v
+             for h, v in zip(header, r)} for r in rows]
 
 
 def to_metric(geom):

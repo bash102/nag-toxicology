@@ -56,21 +56,6 @@ app.styles = (function(){
     };
   }
 
-  function asthma(feature) {
-    return {
-      fillColor: classify(feature.properties.asthma_rate_per_1000_people, [
-        [0, '#bfa4cd'],
-        [6, '#9c7aac'],
-        [10, '#7a518b'],
-        [21, '#5a3072']
-      ], '#ffffff'),
-      fillOpacity: 0.7,
-      color: '#666666',
-      weight: 0.5,
-      opacity: 0.5
-    };
-  }
-
   function floodrisk(feature) {
     return {
       fillColor: feature.properties.storm === '500' ? '#93a5b6' : '#2E5387',
@@ -310,13 +295,29 @@ app.styles = (function(){
     return choropleth(feature.properties.cancer_risk_per_million, airToxicsBreaks, airToxicsColors);
   }
 
+  // NYC DOHMH asthma emergency department visits per 10,000 residents of the age group per year;
+  // keys match data/asthma.geojson
+  var asthmaColors = ['#f2f0f7', '#cbc9e2', '#9e9ac8', '#756bb1', '#54278f'],
+      asthmaMeasures = {
+        ed_adults_rate: { label: 'Adults', period: '2017-2019', breaks: [25, 50, 100, 150] },
+        ed_5_17_rate: { label: 'Ages 5 to 17', period: '2017-2019', breaks: [50, 100, 200, 250] },
+        ed_0_4_rate_2014_2016: { label: 'Ages 4 and under', period: '2014-2016', breaks: [50, 100, 250, 400] }
+      };
+
+  function asthma(feature) {
+    var key = selectedMeasure('asthma');
+    return choropleth(feature.properties[key], asthmaMeasures[key].breaks, asthmaColors);
+  }
+
   // data-layers with a measure picker in the map layers menu
   var layerMeasures = {
+    asthma: asthmaMeasures,
     health_conditions: healthMeasures,
     cancer_mapping: cancerMeasures
   };
 
   return {
+    asthmaColors: asthmaColors,
     breakLabels: breakLabels,
     breakItems: breakItems,
     selectedMeasure: selectedMeasure,

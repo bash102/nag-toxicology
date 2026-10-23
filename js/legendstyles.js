@@ -60,25 +60,17 @@ app.legends = (function(){
       ]
     },
 
-    asthma : {
-      title : "Asthma Rate",
-      subtitle : "ER visits per 1,000 people per year, 2013-2017",
-      type : 'polygon',
-      items : [
-        {
-          color : "#bfa4cd",
-          label : "Less than 6"
-        },{
-          color : "#9c7aac",
-          label : "6 - 9.9"
-        },{
-          color : "#7a518b",
-          label : "10 - 20.9"
-        },{
-          color : "#5a3072",
-          label : "21 or more"
-        }
-      ]
+    // depends on the age group picked in the map layers menu
+    asthma : function() {
+      var styles = app.styles,
+          measure = styles.layerMeasures.asthma[styles.selectedMeasure('asthma')];
+
+      return {
+        title : "Asthma Emergency Visits",
+        subtitle : measure.label + ", per 10,000 per year, " + measure.period,
+        type : 'polygon',
+        items : styles.breakItems(measure.breaks, styles.asthmaColors, '', "No data")
+      };
     },
 
     flood_risk : {

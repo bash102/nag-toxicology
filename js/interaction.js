@@ -68,37 +68,12 @@ app.interaction = (function(d, w, $) {
         });        
     }    
 
-    // sets the height of the left UI & .menu.tabs to fit the user's browser window
-    function setLeftUIheight() {
-        // on small screens the left UI is a drawer that scrolls as a whole
-        if (smallScreen.matches) {
-            $('.ui-left, .menu.tabs').css('height', '');
-            return;
-        }
-
-        var wh = $(w).innerHeight(),
-              fh = $('footer').innerHeight(),
-              hh = $('.menu.header').innerHeight(),
-              tnh = $('.menu.top-nav').innerHeight(),
-              $uiLeft = $('.ui-left'),
-              uiLeftPaddingTop = $uiLeft.css('padding-top').replace('px', ''),
-              $menuTabs = $('.menu.tabs'),
-              // leave room for the tabs' own padding so their content scrolls instead of running under the footer
-              mtPadding = parseInt($menuTabs.css('padding-top'), 10) + parseInt($menuTabs.css('padding-bottom'), 10),
-              mtHeight = wh - hh - tnh - fh - uiLeftPaddingTop - mtPadding;
-
-        $uiLeft.height(wh);
-        $menuTabs.height(mtHeight);
-    }
-
     // adds the event listeners to the non-map interactions UI
     function addListeners() {
         // listener to create a screenshot, currently disabled.
         $('#print_b').click(function() {
             // screenshot();
         });
-
-        $(w).on('resize', setLeftUIheight);
 
         // listener to hide / show data layer UI & other content
         $('li.nav').click(function() {
@@ -136,11 +111,9 @@ app.interaction = (function(d, w, $) {
             toggleOpen('menu-open', $('#menu-toggle'), false);
         });
 
-        // show the legend when a data-layer is turned on
-        $('.data-layer').on('click', function() {
-            if (smallScreen.matches && $(this).hasClass('active')) {
-                toggleOpen('legend-open', $('#legend-toggle'), true);
-            }
+        // show the legend when a data-layer's legend is added
+        $(d).on('legend:rendered', function() {
+            if (smallScreen.matches) toggleOpen('legend-open', $('#legend-toggle'), true);
         });
     }
 
@@ -153,7 +126,6 @@ app.interaction = (function(d, w, $) {
     // get it all going...
     var init = function() {
         addToolTips();
-        setLeftUIheight();
         addListeners();
     };
 

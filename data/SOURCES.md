@@ -719,7 +719,7 @@ Interpretation caveats, from DOH:
 | Cancer risk | Block-level cancer risk by source group, all 13 regional files: `Cancer/BySource/Region{1,2,3,4a,4b,5a,5b,6a,6b,7,8,9,10}_CancerRisk_by_block_srcgrp.xlsx` (1.6 GB). Block-level cancer risk by pollutant for EPA Region 2: `Cancer/ByPollutant/Region2_CancerRisk_by_block_poll.xlsx`. |
 | Respiratory hazard | `Exposure Concentrations/Region2_2020ATS_Exposure_Concentrations.xlsx` (block-level exposure concentrations, µg/m³, 177 air toxics), plus EPA's RfCs and target-organ flags from `2020AirToxScreenPollutants.xlsx` in the 2020 supplemental data zip (`https://www.epa.gov/system/files/other-files/2024-06/2020-airtoxscreen-supplemental-data-files.zip`). |
 | Retrieved | 2026-10-22. |
-| Check | EPA county averages, `https://www.epa.gov/system/files/documents/2025-01/national_cancerrisk_by_county_srcgrp.xlsx`. |
+| Check | EPA county averages, `https://www.epa.gov/system/files/documents/2025-01/national_cancerrisk_by_county_srcgrp.xlsx`, used for a one-time check of the tract method below (the build script does not download it). |
 | Methods | *AirToxScreen 2020 Documentation* (TSD), `https://www.epa.gov/system/files/documents/2024-05/airtoxscreen_2020-tsd.pdf`; AirToxScreen Limitations and Frequent Questions pages. |
 | Geometry | Reused from `data/acs.geojson` (NYC DCP 2020 census tracts, clipped to shoreline). |
 

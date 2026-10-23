@@ -88,9 +88,7 @@ li.nav.active {
 }
 
 footer {
-    position: absolute;
-    bottom: 0px;
-    height: 60px; 
+    height: 60px;
 }
 
 /* Map container */
@@ -165,9 +163,17 @@ footer {
   display: inline-block;  
 }
 
+/* a full-height column: header, nav and footer keep their size and the active tab scrolls */
 .ui.ui-left {
-    max-height: 100%;
+    top: 0;
+    bottom: 0;
     width: 325px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ui-left > * {
+    flex: none;
 }
 
 .menu {    
@@ -191,14 +197,10 @@ footer {
     display: none;
 }
 
-.tabs.active {
+.ui-left > .tabs.active {
     display: block;
-    overflow-y: visible;
-    height: auto;
-}
-
-/* the map layers tab scrolls when its buttons don't fit the window */
-.tabs.dlayer.active {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -379,7 +381,6 @@ div.dlayer-tooltip {
         position: absolute;
         z-index: 6;
         padding: 8px 12px;
-        font-family: 'Open Sans', sans-serif;
         font-size: 1.4em;
         font-weight: 700;
         color: #333;
@@ -399,16 +400,12 @@ div.dlayer-tooltip {
         right: 10px;
     }
 
-    /* the left panel slides in from the left */
+    /* the left panel slides in from the left and scrolls as a whole */
     .ui.ui-left {
         position: fixed;
-        top: 0;
-        bottom: 0;
         left: 0;
-        width: 325px;
         max-width: 88vw;
-        height: 100% !important;
-        box-sizing: border-box;
+        display: block;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         transform: translateX(-105%);
@@ -426,19 +423,18 @@ div.dlayer-tooltip {
 
     .ui-left .tabs {
         width: auto;
-        height: auto !important;
     }
 
-    .ui-left footer {
-        position: static;
+    .ui-left > .tabs.active {
+        overflow-y: visible;
     }
 
     #logo {
         max-width: 100%;
     }
 
-    /* the legend opens above the legend button (body prefix: css/legend.css loads after this file) */
-    body #map-legend-container {
+    /* the legend opens above the legend button */
+    #map-legend-container {
         display: none;
         top: auto;
         bottom: 68px;

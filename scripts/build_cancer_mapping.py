@@ -19,15 +19,12 @@ total cancers or "other" cancers, and its scan method cannot be reproduced exact
 from the published table, so those are null.
 """
 import io
-import re
-import xml.etree.ElementTree as ET
 import zipfile
 
 import shapefile  # pyshp
 
-from common import cd1, feature, fetch, shape, simplify, to_metric, unary_union, write_fc
+from common import cd1, feature, fetch, shape, simplify, to_metric, unary_union, write_fc, xlsx_dicts
 
-DATASET = "y4pv-ib8r"
 ZIP_URL = ("https://health.data.ny.gov/api/views/y4pv-ib8r/files/"
            "313b3230-e2b0-4ee9-9063-dc30c6c04264?download=true"
            "&filename=NYSDOH_CancerMapping_Data_2011_2015.zip")
@@ -68,49 +65,14 @@ SITES = {
 }
 SIG = {1: "higher", -1: "lower", 0: "not significant"}
 
-_NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-
-
-def read_xlsx(raw):
-    """Minimal stdlib reader for the first sheet of an .xlsx -> list of dicts."""
-    z = zipfile.ZipFile(io.BytesIO(raw))
-    shared = []
-    if "xl/sharedStrings.xml" in z.namelist():
-        for si in ET.fromstring(z.read("xl/sharedStrings.xml")).findall("m:si", _NS):
-            shared.append("".join(t.text or "" for t in si.iter(f"{{{_NS['m']}}}t")))
-    sheet = sorted(n for n in z.namelist() if re.match(r"xl/worksheets/sheet\d+\.xml$", n))[0]
-    rows = []
-    for row in ET.fromstring(z.read(sheet)).iter(f"{{{_NS['m']}}}row"):
-        vals = {}
-        for c in row.findall("m:c", _NS):
-            col = re.match(r"[A-Z]+", c.get("r")).group(0)
-            v = c.find("m:v", _NS)
-            if v is None:
-                isv = c.find("m:is", _NS)
-                vals[col] = "".join(t.text or "" for t in isv.iter(f"{{{_NS['m']}}}t")) if isv is not None else None
-                continue
-            t = c.get("t")
-            if t == "s":
-                vals[col] = shared[int(v.text)]
-            elif t in ("str", "inlineStr"):
-                vals[col] = v.text
-            else:
-                f = float(v.text)
-                vals[col] = int(f) if f.is_integer() else f
-        rows.append(vals)
-    hdr = rows[0]
-    return [{hdr[k]: v for k, v in r.items() if k in hdr} for r in rows[1:]]
-
-
 def main():
     area = cd1()
-    area_m = to_metric(area)
 
     z = zipfile.ZipFile(io.BytesIO(fetch(ZIP_URL, binary=True)))
-    data = {str(r["Dohregion"]): r for r in read_xlsx(z.read(DATA_XLSX))
+    data = {str(r["Dohregion"]): r for r in xlsx_dicts(z.read(DATA_XLSX))
             if str(r["Dohregion"]).startswith(COUNTY)}
     members = {}
-    for r in read_xlsx(z.read(XWALK_XLSX)):
+    for r in xlsx_dicts(z.read(XWALK_XLSX)):
         g = str(r["geoid10"])
         if g.startswith(COUNTY):
             members.setdefault(str(r["dohregion"]), []).append(g)

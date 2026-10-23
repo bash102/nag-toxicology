@@ -7,10 +7,22 @@ app.layers = (function(){
 
   var styles = app.styles;
 
-  // the cancer type picked for the cancer mapping layer
-  function cancerKey() {
-    return styles.selectedMeasure('cancer_mapping', styles.cancerMeasures);
-  }
+  // popup labels for every cancer type, so only the popup's fields need to follow the cancer type picker
+  var cancerMeasures = styles.layerMeasures.cancer_mapping,
+      cancerFieldLabels = { total_population: 'Population' },
+      cancerValueLabels = {};
+
+  Object.keys(cancerMeasures).forEach(function(key) {
+    cancerFieldLabels[key + '_obs'] = cancerMeasures[key].label + ': cases diagnosed';
+    cancerFieldLabels[key + '_exp'] = 'Cases expected for this population';
+    cancerFieldLabels[key + '_ratio'] = 'Observed / expected';
+    cancerFieldLabels[key + '_sig'] = 'NYS DOH assessment';
+    cancerValueLabels[key + '_sig'] = {
+      higher: 'Part of an area with more cases than expected',
+      lower: 'Part of an area with fewer cases than expected',
+      'not significant': 'Not part of a flagged area'
+    };
+  });
 
   return {
       sublayers: [{
@@ -143,29 +155,11 @@ app.layers = (function(){
           style: styles.cancerMapping,
           // fields for the cancer type picked in the map layers menu
           interactivity: function() {
-            var key = cancerKey();
+            var key = styles.selectedMeasure('cancer_mapping');
             return [key + '_obs', key + '_exp', key + '_ratio', key + '_sig', 'total_population'].join(',');
           },
-          fieldLabels: function() {
-            var key = cancerKey(),
-                labels = {},
-                name = styles.cancerMeasures[key].label;
-            labels[key + '_obs'] = name + ': cases diagnosed';
-            labels[key + '_exp'] = 'Cases expected for this population';
-            labels[key + '_ratio'] = 'Observed / expected';
-            labels[key + '_sig'] = 'NYS DOH assessment';
-            labels.total_population = 'Population';
-            return labels;
-          },
-          valueLabels: function() {
-            var labels = {};
-            labels[cancerKey() + '_sig'] = {
-              higher: 'Part of an area with more cases than expected',
-              lower: 'Part of an area with fewer cases than expected',
-              'not significant': 'Not part of a flagged area'
-            };
-            return labels;
-          }
+          fieldLabels: cancerFieldLabels,
+          valueLabels: cancerValueLabels
       }, {
           name: 'cso_outfalls',
           url: 'data/cso_outfalls.geojson',

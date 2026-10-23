@@ -16,7 +16,6 @@ Files (gaftp.epa.gov/rtrmodeling_public/AirToxScreen/2020/ and www.epa.gov):
     the RfCs and target organs in 2020AirToxScreenPollutants.xlsx (supplemental
     data zip), for the respiratory hazard index, which EPA describes but does not
     publish as a file for 2020
-  - national_cancerrisk_by_county_srcgrp.xlsx (EPA county averages, used as a check)
 
 The workbooks are large (1.6 GB for the 13 source-group files). They are read with
 python-calamine if it is installed (pip install python-calamine), which is ~7x
@@ -24,13 +23,12 @@ faster than the openpyxl fallback. Derived national tract totals are cached as
 JSON so re-runs are quick.
 """
 import json
-import math
 import os
 import statistics
 import zipfile
 from collections import defaultdict
 
-from common import CACHE_DIR, DATA_DIR, fetch, write_fc
+from common import CACHE_DIR, DATA_DIR, fetch, write_fc, xlsx_rows
 
 YEAR = 2020
 FTP = "https://gaftp.epa.gov/rtrmodeling_public/AirToxScreen/2020"
@@ -40,8 +38,6 @@ POLL_URL = FTP + "/Cancer/ByPollutant/Region2_CancerRisk_by_block_poll.xlsx"
 EXP_URL = FTP + "/Exposure%20Concentrations/Region2_2020ATS_Exposure_Concentrations.xlsx"
 SUPP_URL = ("https://www.epa.gov/system/files/other-files/2024-06/"
             "2020-airtoxscreen-supplemental-data-files.zip")
-COUNTY_URL = ("https://www.epa.gov/system/files/documents/2025-01/"
-              "national_cancerrisk_by_county_srcgrp.xlsx")
 
 NYC_COUNTIES = {"36005", "36047", "36061", "36081", "36085"}
 # 50 states + DC (state FIPS); Puerto Rico (72) and the Virgin Islands (78) are
@@ -129,22 +125,6 @@ def cached_file(url):
     return path
 
 
-def xlsx_rows(path):
-    """Yield the rows of the first sheet of an .xlsx as tuples."""
-    try:
-        from python_calamine import CalamineWorkbook
-    except ImportError:
-        import openpyxl
-        wb = openpyxl.load_workbook(path, read_only=True)
-        for r in wb.worksheets[0].iter_rows(values_only=True):
-            yield tuple(r)
-        wb.close()
-        return
-    ws = CalamineWorkbook.from_path(path).get_sheet_by_index(0)
-    for r in ws.iter_rows():
-        yield tuple(r)
-
-
 def block_id(v):
     s = str(int(v)) if isinstance(v, float) else str(v).strip()
     return s.zfill(15)
@@ -176,7 +156,7 @@ def national_tracts(cd1_ids):
     tracts = {}       # geoid -> [pop, sum(pop*risk), n_blocks]
     detail = {}       # CD1 geoid -> {col: sum(pop*risk)}
     src_cols = None
-    checks = {"blocks": 0, "max_abs_diff_vs_rounded_total": 0.0}
+    checks = {"blocks": 0}
     for reg in REGIONS:
         path = cached_file(SRC_URL.format(reg))
         print(f"  reading {os.path.basename(path)}")
@@ -197,12 +177,6 @@ def national_tracts(cd1_ids):
             vals = [num(v) for v in r[i_tot + 1:i_tot + 1 + len(cols)]]
             tot = sum(vals)
             checks["blocks"] += 1
-            pub = num(r[i_tot])
-            # EPA rounds the published total to 1 significant figure
-            if pub > 0:
-                mag = 10 ** math.floor(math.log10(pub))
-                checks["max_abs_diff_vs_rounded_total"] = max(
-                    checks["max_abs_diff_vs_rounded_total"], abs(tot - pub) / mag)
             g = b[:11]
             t = tracts.setdefault(g, [0.0, 0.0, 0])
             t[0] += pop
@@ -299,21 +273,18 @@ def resp_rfcs():
     header = [str(h).strip() if h is not None else "" for h in next(rows)]
     ix = {h: i for i, h in enumerate(header)}
     i_name = ix["AirToxScreen WEBSITE POLL NAME (comment)"]
-    out, ures = {}, {}
+    out = {}
     for r in rows:
         nm = str(r[i_name] or "").strip()
         if not nm:
             continue
         rfc = num(r[ix["RFC (mg/m3)"]])
-        ure = num(r[ix["URE 1/(ug/m3)"]])
-        if ure:
-            ures.setdefault(nm, set()).add(ure)
         if str(r[ix["resp"]] or "").strip() and rfc > 0:
             out.setdefault(nm, set()).add(rfc)
     for nm, s in list(out.items()):
         assert len(s) == 1, (nm, s)
         out[nm] = s.pop()
-    return out, {k: v.pop() for k, v in ures.items() if len(v) == 1}
+    return out
 
 
 def norm(s):
@@ -379,7 +350,7 @@ def main():
           f"{len(us)} US tracts (50 states + DC), {len(ny)} NY, {len(nyc)} NYC")
 
     pol = cd1_pollutants(ids)
-    rfcs, ures = resp_rfcs()
+    rfcs = resp_rfcs()
     hq, used, missing = cd1_resp_hi(ids, rfcs)
     print(f"  respiratory HI from {len(used)} pollutants; no exposure column for: {missing}")
 
@@ -451,11 +422,6 @@ def main():
                  "sum of EPA exposure concentration / RfC over EPA's respiratory-endpoint air "
                  "toxics (computed here; EPA has not published 2020 HI files). Percentiles "
                  "rank the tract among populated tracts (US = 50 states + DC).",
-        # round-number 5-class breaks chosen for the 2020 CD1 values (lower edge inclusive)
-        "suggested_breaks": {
-            "cancer_risk_per_million": [33, 35, 36, 37, 39, 41],
-            "respiratory_hi": [0.40, 0.45, 0.47, 0.49, 0.51, 0.55],
-        },
         "context": {
             "us_tract_median": round(statistics.median(us), 1),
             "ny_tract_median": round(statistics.median(ny), 1),

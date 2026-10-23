@@ -161,6 +161,9 @@ app.styles = (function(){
     };
   }
 
+  // fill for areas with no value, eg: tracts with no residents
+  var noDataColor = '#ffffff';
+
   // turns class breaks into legend labels, eg: [5, 10] -> ["Less than 5%", "5 - 10%", "10% or more"]
   function breakLabels(breaks, unit) {
     var labels = ['Less than ' + breaks[0] + unit];
@@ -171,13 +174,39 @@ app.styles = (function(){
     return labels;
   }
 
+  // legend items for breakLabels, with an optional row for areas with no value
+  function breakItems(breaks, colors, unit, noDataLabel) {
+    var items = breakLabels(breaks, unit).map(function(label, i) {
+      return { color: colors[i], label: label };
+    });
+    if (noDataLabel) items.push({ color: noDataColor, label: noDataLabel });
+    return items;
+  }
+
   // classifies a value with breaks like those passed to breakLabels
   function breakColor(value, breaks, colors, fallback) {
-    if (value === null || value === undefined || isNaN(value)) return fallback;
+    if (value === null || value === undefined || isNaN(value)) return fallback || noDataColor;
     for (var i = 0; i < breaks.length; i++) {
       if (value < breaks[i]) return colors[i];
     }
     return colors[breaks.length];
+  }
+
+  // census tract choropleths share their outline & opacity
+  function choropleth(value, breaks, colors) {
+    return {
+      fillColor: breakColor(value, breaks, colors),
+      fillOpacity: 0.7,
+      color: '#666666',
+      weight: 0.5,
+      opacity: 0.5
+    };
+  }
+
+  // the measure picked for a data-layer with a measure picker, or its first measure
+  function selectedMeasure(id) {
+    var measures = layerMeasures[id];
+    return measures[app.state[id]] ? app.state[id] : Object.keys(measures)[0];
   }
 
   // CDC PLACES measures, % of adults; keys match data/health_conditions.geojson
@@ -193,20 +222,9 @@ app.styles = (function(){
         csmoking: { label: 'Smoking', breaks: [6, 8, 11, 17] }
       };
 
-  // the measure picked for a data-layer, or its first measure
-  function selectedMeasure(id, measures) {
-    return measures[app.state[id]] ? app.state[id] : Object.keys(measures)[0];
-  }
-
   function healthConditions(feature) {
-    var measure = selectedMeasure('health_conditions', healthMeasures);
-    return {
-      fillColor: breakColor(feature.properties[measure], healthMeasures[measure].breaks, healthColors, '#ffffff'),
-      fillOpacity: 0.7,
-      color: '#666666',
-      weight: 0.5,
-      opacity: 0.5
-    };
+    var key = selectedMeasure('health_conditions');
+    return choropleth(feature.properties[key], healthMeasures[key].breaks, healthColors);
   }
 
   // DEP service line inventory, % of lots with lead or galvanized lines needing replacement
@@ -214,13 +232,7 @@ app.styles = (function(){
       leadBreaks = [5, 10, 15, 20];
 
   function leadServiceLines(feature) {
-    return {
-      fillColor: breakColor(feature.properties.pct_lead_or_grr, leadBreaks, leadColors, '#ffffff'),
-      fillOpacity: 0.7,
-      color: '#666666',
-      weight: 0.5,
-      opacity: 0.5
-    };
+    return choropleth(feature.properties.pct_lead_or_grr, leadBreaks, leadColors);
   }
 
   // combined sewer overflow outfalls: color by overflow events per year, size by overflow volume
@@ -233,7 +245,7 @@ app.styles = (function(){
 
     return {
       radius: (size + (zoom >= 16 ? 4 : 0)) / 2,
-      fillColor: breakColor(feature.properties.overflow_events, csoBreaks, csoColors, '#ffffff'),
+      fillColor: breakColor(feature.properties.overflow_events, csoBreaks, csoColors),
       fillOpacity: 0.9,
       color: '#08306b',
       weight: 1,
@@ -276,17 +288,18 @@ app.styles = (function(){
       };
 
   function cancerMapping(feature) {
-    var key = selectedMeasure('cancer_mapping', cancerMeasures),
-        sig = feature.properties[key + '_sig'];
+    var key = selectedMeasure('cancer_mapping'),
+        sig = feature.properties[key + '_sig'],
+        style = choropleth(feature.properties[key + '_ratio'], cancerBreaks, cancerColors);
 
-    return {
-      fillColor: breakColor(feature.properties[key + '_ratio'], cancerBreaks, cancerColors, '#ffffff'),
-      fillOpacity: 0.75,
-      // outline the areas DOH flagged as higher or lower than expected
-      color: sig === 'higher' ? '#67001f' : sig === 'lower' ? '#053061' : '#666666',
-      weight: sig === 'higher' || sig === 'lower' ? 2 : 0.5,
-      opacity: sig === 'higher' || sig === 'lower' ? 0.9 : 0.5
-    };
+    style.fillOpacity = 0.75;
+    // outline the areas DOH flagged as higher or lower than expected
+    if (sig === 'higher' || sig === 'lower') {
+      style.color = sig === 'higher' ? '#67001f' : '#053061';
+      style.weight = 2;
+      style.opacity = 0.9;
+    }
+    return style;
   }
 
   // EPA AirToxScreen modeled lifetime cancer risk from air toxics, per million people
@@ -294,36 +307,31 @@ app.styles = (function(){
       airToxicsBreaks = [35, 36, 37, 39];
 
   function airToxicsRisk(feature) {
-    return {
-      fillColor: breakColor(feature.properties.cancer_risk_per_million, airToxicsBreaks, airToxicsColors, '#ffffff'),
-      fillOpacity: 0.7,
-      color: '#666666',
-      weight: 0.5,
-      opacity: 0.5
-    };
+    return choropleth(feature.properties.cancer_risk_per_million, airToxicsBreaks, airToxicsColors);
   }
 
+  // data-layers with a measure picker in the map layers menu
+  var layerMeasures = {
+    health_conditions: healthMeasures,
+    cancer_mapping: cancerMeasures
+  };
+
   return {
+    breakLabels: breakLabels,
+    breakItems: breakItems,
+    selectedMeasure: selectedMeasure,
+    layerMeasures: layerMeasures,
     airToxicsColors: airToxicsColors,
     airToxicsBreaks: airToxicsBreaks,
     airToxicsRisk: airToxicsRisk,
-    selectedMeasure: selectedMeasure,
-    layerMeasures: {
-      health_conditions: healthMeasures,
-      cancer_mapping: cancerMeasures
-    },
     cancerColors: cancerColors,
     cancerBreaks: cancerBreaks,
-    cancerMeasures: cancerMeasures,
     cancerMapping: cancerMapping,
     csoColors: csoColors,
-    csoBreaks: csoBreaks,
     csoOutfalls: csoOutfalls,
     harborColors: harborColors,
     harborWaterQuality: harborWaterQuality,
-    breakLabels: breakLabels,
     healthColors: healthColors,
-    healthMeasures: healthMeasures,
     healthConditions: healthConditions,
     leadColors: leadColors,
     leadBreaks: leadBreaks,

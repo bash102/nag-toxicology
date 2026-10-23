@@ -32,13 +32,14 @@ app.map = (function(w, d, $, H) {
 
     // create the Leaflet Map
     function initMap() {
-        // the study area (Brooklyn Community Districts 1, 2 and 4) and a wider box that limits panning
+        // the study area's bounds (see DISTRICTS in scripts/common.py) and a wider box that limits panning
         var studyArea = L.latLngBounds([40.679, -74.004], [40.740, -73.896]),
             mapBounds = studyArea.pad(0.5);
 
         // map paramaters to pass to Leaflet
         var params = {
             zoomControl: false,
+            preferCanvas: true, // some data-layers have thousands of features
             zoomSnap: 0.5,
             maxZoom: 19,
             minZoom: 12,
@@ -499,6 +500,7 @@ app.map = (function(w, d, $, H) {
     return {
         init: init,
         sublayers : sublayers,
+        getMap : function() { return map_object; },
         hideShow : hideShow,
         renderLegend : renderLegend,
         getSubLayerIndex : getSubLayerIndex

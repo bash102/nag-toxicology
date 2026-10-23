@@ -4,6 +4,7 @@ var app = app || {};
 app.legends = (function(){
 
   // legend items for bands between consecutive edges, eg: ['12', '14', '16'] -> "12 - 14", "14 - 16"
+  // the air quality edges match the band breaks in scripts/build_air_quality.py
   function bands(edges, colors) {
     return colors.map(function(color, i) {
       return { color : color, label : edges[i] + ' - ' + edges[i + 1] };

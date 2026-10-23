@@ -1,5 +1,5 @@
 """Build data/acs.geojson: ACS 2020-2024 5-year estimates for census tracts covering the study area
-(Brooklyn Community Districts 1, 2 and 4).
+(common.DISTRICTS).
 
 Sources
 - Tract polygons: NYC DCP "2020 Census Tracts" (clipped to shoreline), ArcGIS

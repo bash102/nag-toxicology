@@ -1,6 +1,6 @@
 """Build data/asthma.geojson: asthma emergency-department visit rates for the
 NYS Environmental Public Health Tracking (EPHT) sub-county areas covering the study area
-(Brooklyn Community Districts 1, 2 and 4).
+(common.DISTRICTS).
 
 Source: NYS DOH, "Sub-County Data for Selected Health Outcomes in New York State,
 2008-2012, 2013-2017" (health.data.ny.gov dataset vtby-z2yc; SPARCS data), and the
@@ -75,7 +75,7 @@ def main():
             "asthma_ed_age_adjusted_per_1000": rate(eid, PERIOD, "ED Visits", "age-adjusted"),
             "asthma_hosp_crude_per_1000": rate(eid, PERIOD, "Hospitalizations", "crude"),
             "asthma_ed_crude_per_1000_2008_2012": rate(eid, "2008-2012", "ED Visits", "crude"),
-            "share_of_area_in_area": round(to_metric(g).area / area_m.area, 3),
+            "share_of_study_area": round(to_metric(g).area / area_m.area, 3),
             "source": "NYS DOH Environmental Public Health Tracking / SPARCS (health.data.ny.gov vtby-z2yc)",
         }
         feats.append(feature(simplify(g, 1.5), props))

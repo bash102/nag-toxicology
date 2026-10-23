@@ -3,7 +3,7 @@
 category = highly_regulated | e_designation | spill_major | spill_minor
 
 highly_regulated  U.S. EPA ECHO (Enforcement and Compliance History Online) facility search,
-                  active facilities within the study area (Brooklyn CDs 1, 2 and 4) + 200 m
+                  active facilities within the study area (common.DISTRICTS) + 200 m
                   that are any of:
                   - Clean Air Act major source (Title V, "Major Emissions")
                   - Clean Water Act major NPDES discharger
@@ -15,12 +15,12 @@ highly_regulated  U.S. EPA ECHO (Enforcement and Compliance History Online) faci
                     only construction, real-estate, school, transit, bridge/road-work, remediation
                     or Con Edison manhole/vault jobs (mostly one-time generators) are excluded.
 e_designation     NYC DCP (E) Designations (nyedesignations feature service) on tax lots in
-                  Brooklyn CDs 1, 2 and 4 (MapPLUTO CD in DISTRICTS: 301, 302, 304) with a
+                  the study area (MapPLUTO CD in DISTRICTS) with a
                   hazardous-materials or air-quality requirement (noise-only E-designations
                   excluded). Point = MapPLUTO lot centroid (DCP Latitude/Longitude).
 spill_*           NYS DEC Spill Incidents (data.ny.gov u44d-k5fk), Kings County, spill date
                   2011-01-01 or later, geocoded with NYC GeoSearch (no coordinates in source)
-                  and kept if inside the boundary of CDs 1, 2 and 4 (no buffer). spill_major =
+                  and kept if inside the districts' boundary (no buffer). spill_major =
                   total reported quantity >= 100 gallons; everything else (smaller, unknown, or
                   non-gallon units) is spill_minor.
 """

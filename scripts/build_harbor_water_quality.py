@@ -1,5 +1,5 @@
 """Build data/harbor_water_quality.geojson: NYC DEP Harbor Survey Monitoring (HSM) stations in
-the waters near Brooklyn Community Districts 1, 2 and 4 (East River off Greenpoint; Newtown
+the waters near the study area (common.DISTRICTS; East River off Greenpoint; Newtown
 Creek, English Kills, East Branch; the head of the Gowanus Canal), with bacteria and
 dissolved-oxygen summaries for the latest complete years.
 
@@ -11,12 +11,8 @@ late 2022; about a third of the 2021 rows have lat and long swapped). A station'
 median of its valid recorded positions since 2016 (swapped pairs are corrected; values outside
 the harbor, e.g. "-74"/"41" or 0, are dropped).
 
-Selection: stations sampled since 2021-01-01 whose point is within 1 km of the districts. That
-yields E2 (East River) and NC0, NC0A, NC0B, NC1, NC2, NC3 (Newtown Creek and tributaries), plus
-GC3, GC4 and GC5 at the head of the Gowanus Canal, 0.5-0.9 km south of CD 2 (GC6 is ~1.3 km
-away). NC0A was discontinued in May 2022 and replaced by NC0B ~200 m away. HSM has no current
-station in the East River off DUMBO, Brooklyn Heights or Wallabout Bay: the nearest, E1 (off
-the Brooklyn Bridge), was last sampled in 2013.
+Selection: the STATIONS candidates sampled since ACTIVE_SINCE whose point is within
+MAX_DIST_M of the districts (the stations kept are listed in data/SOURCES.md).
 
 Summaries (per station, over PERIOD_YEARS, or for a discontinued station its last three
 calendar years with >= 20 sampling dates):
@@ -62,7 +58,6 @@ STATIONS = {
     "GC3": ("Gowanus Canal", "SC"),
     "GC4": ("Gowanus Canal", "SC"),
     "GC5": ("Gowanus Canal", "SC"),
-    "GC6": ("Gowanus Canal", "SC"),  # ~1.3 km from the districts; dropped by MAX_DIST_M
 }
 DO_STANDARD = {"I": 4.0, "SD": 3.0, "SC": 3.0}  # acute ("at any time") standards
 FECAL_STANDARD = 200.0

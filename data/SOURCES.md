@@ -8,8 +8,8 @@ polygons are simplified with a 1–1.5 m tolerance.
 **Study area:** Brooklyn Community Districts 1, 2 and 4 (BoroCD 301, 302 and 304:
 Greenpoint and Williamsburg; Downtown Brooklyn, DUMBO, Fort Greene, Brooklyn Heights,
 Boerum Hill, Clinton Hill and the Navy Yard; Bushwick), set by `DISTRICTS` in
-`scripts/common.py`. The map covered CD1 only until 2026-10. The boundary comes from NYC DCP *Community Districts* (clipped to shoreline), served as
-`NYC_Community_Districts` FeatureServer at
+`scripts/common.py`. The boundary comes from NYC DCP *Community Districts* (clipped to
+shoreline), served as `NYC_Community_Districts` FeatureServer at
 `https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Community_Districts/FeatureServer/0`.
 Unless a layer says otherwise, it covers the three districts plus a 200 m buffer. The
 buffer is computed in UTM 18N. Because Newtown Creek forms the northeastern edge of the
@@ -33,8 +33,9 @@ are cached in `~/.cache/nag-toxicology` (override with `$NAG_CACHE`).
 | Geometry | NYC DCP *2020 Census Tracts* (clipped to shoreline): `https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Census_Tracts_for_2020_US_Census/FeatureServer/0` |
 
 Processing:
-- Keeps every 2020 tract with at least 25% of its area inside CD1. CD1 is made up
-  exactly of whole tracts, so this gives 54 tracts.
+- Keeps every 2020 tract with at least 25% of its area inside the three districts: 123
+  tracts. All but five lie wholly inside; two are 85–88% inside, and three (in Carroll
+  Gardens–Cobble Hill–Gowanus–Red Hook and Bedford-Stuyvesant West) only 29–31%.
 - `total_population` = B03002_001.
 - `people_per_square_mile` = B03002_001 / ALAND_SQMI, rounded.
 - `percent_hispanic` = B03002_012 / total.
@@ -45,11 +46,12 @@ Processing:
 - `median_household_income` = B19013_001. It is null when the Census suppresses the
   estimate (negative sentinel values in the Summary File). A value of 250001 means
   "$250,000+".
-- Three tracts have 0 population: 36047044902, 36047057902 and 36047058902 (parks and
-  industrial waterfront). They are kept, with `no_population: true`, density 0, and null
-  percentages and income.
-- Extra properties: `tract_label`, `nta_name`, `land_area_sq_mi`, `share_in_cd1`,
-  `acs_vintage`.
+- Six tracts have 0 population: 36047003102 (Fort Greene), 36047040700 (The Evergreens
+  Cemetery), 36047044902 (East Williamsburg), 36047054300 (Brooklyn Navy Yard), and
+  36047057902 and 36047058902 (Greenpoint). They are kept, with `no_population: true`,
+  density 0, and null percentages and income.
+- Extra properties: `tract_label`, `nta_name`, `land_area_sq_mi`, `share_in_area` (share
+  of the tract's area inside the districts), `acs_vintage`.
 
 ## asthma.geojson — `scripts/build_asthma.py`
 
@@ -76,13 +78,13 @@ Processing:
   - `asthma_hosp_crude_per_1000` (hospitalizations)
   - `asthma_ed_crude_per_1000_2008_2012` (the same measure for the original map's period)
   - `epht_id`
-  - `share_of_area_in_area` (the clipped polygon's share of the three districts' area)
+  - `share_of_study_area` (the clipped polygon's share of the three districts' area)
 - NTA polygons are clipped to the boundary of Community Districts 1, 2 and 4 (no
   buffer). Slivers smaller than 2 ha are dropped. The result is 13 areas: Greenpoint,
   North Side–South Side, Williamsburg, East Williamsburg, Bushwick North, Bushwick South,
   DUMBO–Vinegar Hill–Downtown Brooklyn–Boerum Hill, Fort Greene, Clinton Hill and
-  Brooklyn Heights–Cobble Hill, plus small parts of Bedford (34 ha), Prospect Heights
-  (5 ha) and Park Slope–Gowanus (4 ha) that fall inside the districts.
+  Brooklyn Heights–Cobble Hill, plus small parts (4–34 ha) of Bedford, Prospect Heights
+  and Park Slope–Gowanus that fall inside the districts.
 - Note: the original layer probably showed 5-year *cumulative* cases per 1,000
   (`asthma5y / totpop * 1000`, according to `sql/format_asthma.sql`). The new values are
   annual rates, so they are about 1/5 of the old scale.
@@ -104,8 +106,8 @@ in places; inside the study area it covers about 8.8 km², against 4.8 km² for 
 current layer.
 
 Processing:
-- Each layer is intersected with the study area (Community Districts 1, 2 and 4 + 200 m), dissolved into one MultiPolygon per storm,
-  and simplified at 1.5 m. Specks smaller than 25 m² are dropped.
+- Each layer is intersected with the study area (+ 200 m), dissolved into one
+  MultiPolygon per storm, and simplified at 1.5 m. Specks smaller than 25 m² are dropped.
 - The 500-year feature comes first in the file so the 100-year feature draws on top.
 - The floodplain polygons include open water within the buffer.
 - Properties: `storm`, `period`, `description`, `area_acres`, `source`.
@@ -131,9 +133,8 @@ Common properties: `category`, `name`, `address`, `description`, `program`, `dat
   bridge or road work, remediation, or Con Edison manhole/vault jobs. These are mostly
   one-time generators.
 - `link` = ECHO Detailed Facility Report (`https://echo.epa.gov/detailed-facility-report?fid=<FRS registry id>`).
-- Result of the 2026-10-23 run: 43 facilities (27 in CD 1, 8 in CD 2, 1 in CD 4, and 7 in the
-  buffer, including Queens sites across Newtown Creek). New in CD 2 are the Brooklyn Navy Yard
-  Cogen Facility, the Red Hook WRRF (CWA major) and Cogen Corp at 111 Livingston St.
+- Result of the 2026-10-23 run: 43 facilities, 7 of them in the buffer (including Queens
+  sites across Newtown Creek).
 - ECHO's point for "Atlas Park" (Cooper Avenue, Glendale) is on the Bushwick/Ridgewood line,
   well away from the Glendale mall. It is kept as ECHO publishes it.
 
@@ -153,8 +154,8 @@ Common properties: `category`, `name`, `address`, `description`, `program`, `dat
 - Point = the MapPLUTO lot centroid (`Latitude`/`Longitude`).
 - One point per lot, combining all E-numbers on that lot.
 - Extra properties: `bbl`, `ceqr_number`.
-- Result of the 2026-10-23 run: 1,125 lots (882 in CD 1, 203 in CD 2, 31 in CD 4, and 9 whose
-  centroid falls just outside the district boundary).
+- Result of the 2026-10-23 run: 1,125 lots, 9 of them with a centroid just outside the
+  district boundary.
 
 ### `spill_major` / `spill_minor`: NYS DEC Spill Incidents
 
@@ -179,9 +180,7 @@ Common properties: `category`, `name`, `address`, `description`, `program`, `dat
   - 5,704 Kings County spills since 2011-01-01.
   - 3,592 geocoded to an address-level match. The other 2,112 had no usable street
     address (intersections, highway or waterbody descriptions, blank) and are left out.
-  - 1,025 of the geocoded spills fall in the three districts: 69 major and 956 minor
-    (CD 1: 20 major, 481 minor; CD 2: 48 major, 387 minor; CD 4: 1 major, 88 minor). Dates
-    run from 2011-01-05 to 2026-10-08.
+  - 1,025 of the geocoded spills fall in the three districts: 69 major and 956 minor.
   - Because about 37% of Brooklyn spill records cannot be located, the spill layer
     under-counts. It is especially thin for spills on waterways and highways, such as
     Newtown Creek and the BQE.
@@ -264,9 +263,7 @@ Properties: `name`, `facility_type`, `address`, `source`. Extras: `borough`, `op
      Street and Little Street" for Red Hook.
 
 Result of the 2026-10-23 run: **39 facilities**: 23 from DEC, 14 DCWP-licensed scrap-metal
-processors from FacDB, and the 2 WRRFs. The expansion adds Emerson Recycling Corp (63-65
-Emerson Place, CD 2), KKC Bushwick Inc (1773 Bushwick Ave, a scrap-metal processor in the
-buffer, 126 m outside CD 4) and the Red Hook WRRF. Every other facility is in or near CD 1.
+processors from FacDB, and the 2 WRRFs.
 
 ## industrial_history_points.geojson — not produced
 
@@ -303,21 +300,12 @@ for the monitoring design and model details.
 Processing:
 - The script reads the asset metadata for the current blob, downloads and caches the
   zip, and picks the highest-numbered `aa<N>_pm300m` / `aa<N>_no2300m` grids in it.
-- Clip: every cell that touches the study area (Community Districts 1, 2 and 4 + 200 m;
-  398 cells), then the polygons are cut exactly to the study-area boundary.
-- Values in those cells: **PM2.5 5.783–8.482 µg/m³**, **NO2 12.905–20.933 ppb**.
-- Classified into 5 bands with fixed, round-number breaks (lower edge inclusive; the top
-  band includes its upper edge). The script stops if a future year falls outside them.
-
-  | band | PM2.5 (`air_pm25`) | cells | NO2 (`air_no2`) | cells |
-  |---|---|---|---|---|
-  | 1 | 5.6 – 6.2 µg/m³ | 9 | 12.0 – 14.0 ppb | 9 |
-  | 2 | 6.2 – 6.8 µg/m³ | 67 | 14.0 – 16.0 ppb | 154 |
-  | 3 | 6.8 – 7.4 µg/m³ | 164 | 16.0 – 18.0 ppb | 165 |
-  | 4 | 7.4 – 8.0 µg/m³ | 129 | 18.0 – 20.0 ppb | 65 |
-  | 5 | 8.0 – 8.6 µg/m³ | 29 | 20.0 – 22.0 ppb | 5 |
-
-  PM2.5 uses equal 0.6 µg/m³ steps and NO2 equal 2 ppb steps.
+- Clip: every cell that touches the study area (+ 200 m; 398 cells), then the polygons
+  are cut exactly to the study-area boundary.
+- Values in those cells: **PM2.5 5.78–8.48 µg/m³**, **NO2 12.90–20.93 ppb**.
+- Classified into 5 bands with fixed, round-number breaks: PM2.5 5.6–8.6 µg/m³ in
+  0.6 µg/m³ steps, NO2 12–22 ppb in 2 ppb steps (lower edge inclusive; the top band
+  includes its upper edge). The script stops if a future year falls outside them.
 - Polygonized, dissolved to one MultiPolygon per band, reprojected to WGS84, and
   simplified at **5 m** (the grid is 300 m, so this only affects the clipped edge). Band 1
   comes first in each file.
@@ -332,10 +320,10 @@ Caveats:
   regulatory (EPA/DEC) monitors.
 - The grid is **300 m**, coarser than a city block, so the bands show neighborhood-scale
   gradients only. A band edge is a cell edge, not a real boundary.
-- The range across the study area is narrow (about 2.7 µg/m³ for PM2.5 and 8 ppb for
-  NO2), so the bands separate fairly small differences. Read them as relative levels
-  within the study area, not as health or regulatory thresholds. For reference, every PM2.5 cell is
-  below the EPA annual standard of 9.0 µg/m³ (set in 2024).
+- The range across the study area is narrow, so the bands separate fairly small
+  differences. Read them as relative levels within the study area, not as health or
+  regulatory thresholds. For reference, every PM2.5 cell is below the EPA annual standard
+  of 9.0 µg/m³ (set in 2024).
 - Cells with no value (mainly East River water) leave about 2.0% of the buffered study
   area uncovered. Nearly all of it is outside the three districts themselves (about
   0.2 ha along the shoreline is inside).
@@ -361,9 +349,8 @@ Processing:
 - `year` = object giving each measure's data year. All eight are **2023** (BRFSS 2023).
 - `total_population` = PLACES `totalpopulation`, which is the **Census 2020** count. It
   differs from the ACS 2020–2024 `total_population` in `acs.geojson`.
-- The six zero-population tracts (36047003102, 36047040700, 36047044902, 36047054300,
-  36047057902, 36047058902) are not in PLACES. They are kept with `no_population: true`, null measures, null years and
-  `total_population` 0.
+- The six zero-population tracts (see `acs.geojson`) are not in PLACES. They are kept
+  with `no_population: true`, null measures, null years and `total_population` 0.
 - Extra properties: `no_population`, `places_release`. The FeatureCollection `metadata`
   lists the full measure names.
 
@@ -382,16 +369,9 @@ Caveats:
   Downtown Brooklyn–DUMBO–Boerum Hill and Fort Greene tracts (diabetes 17.7–25.4%).
 - Current asthma among *adults* is a different measure from the NYS EPHT asthma ED-visit
   rates in `asthma.geojson`.
-- Suggested 5-class breaks (round numbers near the quintiles of the 117 populated
-  tracts, %, study-area min–max in brackets):
-  `casthma` 9 / 9.5 / 10 / 11 [8.3–12.8];
-  `copd` 2.5 / 3 / 4 / 5.5 [1.4–15.8];
-  `cancer` 3.5 / 4 / 4.5 / 5.5 [2.6–8.8];
-  `chd` 2.5 / 3 / 3.5 / 4.5 [1.4–11.6];
-  `diabetes` 5 / 6.5 / 8 / 10.5 [2.9–25.4];
-  `mhlth` 14 / 15 / 16 / 17.5 [10.7–25.4];
-  `bphigh` 17 / 19.5 / 22 / 25 [11.8–43.0];
-  `csmoking` 6.5 / 8.5 / 10.5 / 14 [4.4–27.8].
+- Study-area min–max (%): `casthma` 8.3–12.8, `copd` 1.4–15.8, `cancer` 2.6–8.8, `chd`
+  1.4–11.6, `diabetes` 2.9–25.4, `mhlth` 10.7–25.4, `bphigh` 11.8–43.0, `csmoking`
+  4.4–27.8. Map class breaks are in `js/styles.js`.
 
 ## lead_service_lines.geojson — `scripts/build_lead_service_lines.py`
 
@@ -429,8 +409,8 @@ building class and billing records; *Not Verified* = no plumbing records on file
 *Other* = no operational service line.
 
 Processing:
-- Inventory lots in Brooklyn are queried within the bounding box of Community Districts
-  1, 2 and 4. A lot is in the study area if its BBL is a MapPLUTO lot with `CD` 301, 302
+- Inventory lots in Brooklyn are queried within the bounding box of the three districts.
+  A lot is in the study area if its BBL is a MapPLUTO lot with `CD` 301, 302
   or 304 (34,058 lots), or, for the 152 inventory BBLs not in MapPLUTO (retired or
   re-numbered lots), if its representative point is inside the three districts. 110
   MapPLUTO study-area lots have no inventory record.
@@ -448,18 +428,15 @@ Processing:
   122 GRR, 4,628 Unknown, 22,910 Non-Lead, 1,579 Non-Applicable. 15.3% of the 32,521
   lots with a service line are lead or GRR and 14.2% unknown.
 - `pct_lead_or_grr` by tract runs from 0 to 29.9% (0 to 100% counting the
-  `small_sample` tracts: 36047003102 has a single lot, which is lead or GRR). Suggested
-  breaks: 5 / 10 / 15 / 20 (classes <5, 5–10, 10–15, 15–20, ≥20 hold 22, 18, 35, 28
-  and 20 tracts).
+  `small_sample` tracts: 36047003102 has a single lot, which is lead or GRR). Map class
+  breaks are in `js/styles.js`.
 
 Caveats:
 - Counts are **tax lots, not service lines or people**. DEP's data does not account for
   multiple service lines or addresses on one BBL, and condos appear once under their
   billing BBL. Tracts dominated by large lots (NYCHA campuses, parks, industrial areas)
   have few lots, so their percentages rest on small numbers. 10 tracts are
-  `small_sample`: 36047003102 has 1 lot, 36047040700 and 36047049301 have 2,
-  36047048900 has 4, 36047054300 has 5, 36047002300 has 7, 36047002901 has 8,
-  36047058902 has 13, 36047003101 has 20 and 36047054500 has 24.
+  `small_sample`, with 1 to 24 lots each.
 - Lead lines are mostly in older 1–4 family buildings, so a high share of lots does not
   mean a high share of residents.
 - Most classifications come from historical plumbing records, not inspection. DEP says
@@ -487,7 +464,7 @@ Selection:
   waterfront this takes in the Red Hook WRRF's East River outfalls from the Navy Yard and
   Wallabout Bay past DUMBO and Brooklyn Heights to Atlantic Avenue (RH-001 to RH-016 and
   RH-040), plus RH-018 at Kane Street (405 m from CD 2). The Wallabout outfalls NCB-013,
-  NCB-014 and NCB-082 belong to the Newtown Creek WRRF and were already mapped.
+  NCB-014 and NCB-082 belong to the Newtown Creek WRRF.
 - Plus every outfall whose receiving water is Newtown Creek or a tributary (Dutch Kills,
   Whale Creek, Maspeth Creek, English Kills, East Branch), however far it is from the
   districts. This adds BB-009, BB-026 and BB-040 at the head of Dutch Kills and NCQ-077 at
@@ -528,8 +505,7 @@ Properties:
   - `dec_detection_method`: DEC's 2015 "Discharge Activation Type", either "Model" or
     "Monitoring"
   - `outfall_size`
-  - `distance_to_area_m`: metres from the outfall to the nearest of CDs 1, 2 and 4 (was
-    `distance_to_cd1_m`)
+  - `distance_to_area_m`: metres from the outfall to the nearest of the three districts
   - `note`
 
 Results:
@@ -617,8 +593,8 @@ Selection:
 
 Period: **2023–2025**, the three most recent complete calendar years. All active stations
 were sampled throughout: about 53 dates a year at NC stations and about 31 at E2. The
-Gowanus stations were not (see above). Summer
-visits are roughly twice weekly; winter visits are monthly.
+Gowanus stations were not (see above). Summer visits are roughly twice weekly; winter
+visits are monthly.
 
 Processing (per station, over the period):
 - `n_samples` = sampling dates (rows) in the period.
@@ -749,11 +725,10 @@ Field meanings, from DOH:
 Processing:
 - Kings County block groups are dissolved into DOH areas using the crosswalk.
 - Selection keeps the DOH areas with **more than 50% of their land area (TIGER `ALAND10`)
-  inside Community Districts 1, 2 and 4** (BoroCD 301, 302, 304). Most areas are almost
-  entirely inside (98% or more) or under 2% inside. The in-between cases: kept are
-  `36047DOH0067` (78.5%) and eight areas at 90.7–97.9%; dropped are eight merged areas
-  at 15.4–47.2% (`36047DOH0037`, `DOH0083`, `DOH0058`, `DOH0038`, `DOH0057`, `DOH0310`,
-  `DOH0084`, `DOH0307`). The dropped parts leave small gaps along the districts' edges.
+  inside the three districts**. Most areas are almost entirely inside (98% or more) or
+  under 2% inside. Of the areas in between, nine (78.5–97.9% inside) are kept and eight
+  merged areas (15.4–47.2%) are dropped. The dropped parts leave small gaps along the
+  districts' edges.
 - Result: **211 features** (115 single block groups and 96 DOH merged areas). Together
   they cover 98.1% of the three districts, with a 2011–2015 average population of
   398,785.
@@ -831,9 +806,9 @@ Processing:
   EPA's own "Total Cancer Risk" column is rounded to one significant figure (every one
   of the 1,351 study-area blocks reads 30 or 40), so the unrounded sum of the source
   columns is used instead, and the tract mean is given to one decimal. Rounding the sum
-  reproduces EPA's published total in every block except 11 of the 5.8 million nationally (in Louisiana, Texas and
-  Washington). None of those is in New York. That decimal shows relative position only. It
-  is far finer than EPA's stated precision (see caveats).
+  reproduces EPA's published total in every block except 11 of the 5.8 million nationally
+  (in Louisiana, Texas and Washington). None of those is in New York. That decimal shows
+  relative position only. It is far finer than EPA's stated precision (see caveats).
 - `cancer_risk_pctile_national`, `cancer_risk_pctile_state`: EPA does not publish
   percentiles. They are computed here from the full national block files, aggregated to
   tracts in the same way. A value is the share of populated tracts with a lower tract value
@@ -850,10 +825,9 @@ Processing:
   acetaldehyde, diesel PM, naphthalene, chlorine, nickel, chromium VI and others. Each
   block's HI is computed, then the tract takes the population-weighted mean. The inputs and
   units are checked: exposure concentration × EPA's URE reproduces EPA's published
-  pollutant cancer risks in every CD1 tract (checked on the earlier CD1-only build;
-  not repeated for CDs 2 and 4), for formaldehyde, acetaldehyde, chromium VI,
-  nickel, naphthalene, 1,4-dichlorobenzene, acrylonitrile and epichlorohydrin (ratio
-  1.000000). For comparison, EPA's published 2019 AirToxScreen respiratory HI for
+  pollutant cancer risks in every CD 1 tract (CDs 2 and 4 not checked), for
+  formaldehyde, acetaldehyde, chromium VI, nickel, naphthalene, 1,4-dichlorobenzene,
+  acrylonitrile and epichlorohydrin (ratio 1.000000). For comparison, EPA's published 2019 AirToxScreen respiratory HI for
   Brooklyn's 2010 tracts is mostly 0.5, with some 0.4 (rounded to one significant figure;
   EPA ArcGIS service `NATA2019_RespHI_with_Pollutants_SourceGroups`). That is in line with
   the 0.42–0.54 computed here. Two decimals.
@@ -866,8 +840,8 @@ Processing:
   marine vessels, locomotives, airports and railyards), Nonpoint (NP), Fires, Biogenics,
   Secondary formation, Background.
 - `top_cancer_source_types`: the 3 largest of EPA's 37 detailed source types, leaving out
-  secondary formation and background. Those two are almost the same across the study area, so
-  the broad top-3 is identical in every tract. Labels shorten the mapping tool's names.
+  secondary formation and background. Those two are almost the same across the study
+  area, so the broad top-3 is identical in every tract. Labels shorten the mapping tool's names.
 - `cancer_risk_by_source_group`: all 8 broad groups (two decimals).
 - `top_respiratory_pollutants`: the 3 largest hazard quotients.
 - Also `tract_label`, `nta_name` (from `acs.geojson`), `population_2020` (sum of EPA's
@@ -885,45 +859,31 @@ Processing:
   used as a fallback but is about 7× slower.
 
 Result of the 2026-10-23 run (123 tracts, 120 with values):
-- `cancer_risk_per_million` **32.9–40.5** (median 35.65). The values are tightly
-  clustered: quartiles 35.1 / 35.65 / 36.1, deciles 35.0 (10th) to 36.9 (90th); 99 of the
+- `cancer_risk_per_million` **32.9–40.5**. The values are tightly clustered: 99 of the
   120 tracts are between 35.0 and 36.9.
-  - Highest: Greenpoint, which holds the 10 highest tracts (37.5–40.5; 36047056500 and
-    36047057300 at 40.5; Greenpoint median 39.8).
-  - Lowest: three nearly empty tracts, 36047040700 (The Evergreens Cemetery, 32.9),
-    36047054300 (Brooklyn Navy Yard, 33.6) and 36047044902 (East Williamsburg industrial
-    area, 33.7). Among residential tracts, Bushwick is lowest (Bushwick East 34.6–35.2,
-    Bushwick West 34.8–35.4).
-  - CD2 neighborhoods (Downtown Brooklyn-DUMBO-Boerum Hill, Fort Greene, Clinton Hill,
-    Brooklyn Heights) are 35.5–36.9, in the middle of the range.
-- `respiratory_hi` **0.42–0.54** (median 0.47). Every tract is well below 1. Highest in
-  Greenpoint (0.53–0.54 in six tracts), lowest in the same nearly empty tracts (0.42–0.44)
-  and Bushwick (0.45–0.46).
+  - Highest: Greenpoint, which holds the 10 highest tracts.
+  - Lowest: the three nearly empty tracts above. Among residential tracts, Bushwick is
+    lowest.
+- `respiratory_hi` **0.42–0.54**. Every tract is well below 1. Highest in Greenpoint,
+  lowest in the same nearly empty tracts and Bushwick.
 - National percentile 71–94, state percentile 68–99.
 - Top pollutants in all 120 tracts: formaldehyde (18.7–21.5 per million), then carbon
   tetrachloride (3.0, the same everywhere; it is a long-lived global pollutant that is
-  almost entirely background) and benzene (2.5–3.5). They come in the order formaldehyde,
-  carbon tetrachloride, benzene in 93 tracts and formaldehyde, benzene, carbon
-  tetrachloride in 27.
+  almost entirely background) and benzene (2.5–3.5), in either order depending on the
+  tract.
 - Top source groups in all 120 tracts: secondary formation (15.4–15.8), nonpoint
   (5.8–8.6), nonroad mobile (4.3–6.8). On-road mobile is 2.5–4.4, background 3.0 and point
   sources 0.6–1.4. Top detailed types: solvents and coatings, commercial cooking, then
-  either on-road light-duty gas off-network (110 tracts) or nonroad commercial equipment
-  (10).
+  either on-road light-duty gas off-network or nonroad commercial equipment.
 - Top respiratory HQs in all tracts: formaldehyde, acetaldehyde, acrolein. Diesel PM is
   fourth in every tract (HQ 0.05–0.08).
 - Context (tract-level, same method): US median **29.2**, New York State median 28.3,
   **NYC median 35.2** (2,292 tracts). Population-weighted means: US 30.1 (EPA: "the
   national average risk from air toxics exposure in 2020 was 30-in-1 million"), Kings
   County 34.7 (EPA publishes it rounded as 30).
-- Suggested 5-class breaks (4 cut points; a value below a cut point falls in the class
-  under it):
-  - `cancer_risk_per_million`: 35 / 35.5 / 36 / 37 (classes hold 10, 38, 34, 27 and 11
-    tracts). The previous CD1 breaks, 35 / 36 / 37 / 39, would put 72 of the 120 tracts in
-    one class (10, 72, 27, 3 and 8).
-  These separate small differences. The whole study-area range of cancer risk is less than
-  one of EPA's rounding steps, so present the classes as relative levels within the study
-  area, not as meaningful health differences.
+- Map class breaks are in `js/styles.js`. They separate small differences: the whole
+  study-area range of cancer risk is less than one of EPA's rounding steps, so present the
+  classes as relative levels within the study area, not as meaningful health differences.
 
 Caveats (EPA's wording in quotes):
 - **Screening tool.** "EPA developed AirToxScreen as a screening tool for State, Local and
@@ -971,16 +931,14 @@ Caveats (EPA's wording in quotes):
 ## basemap overlays
 
 `data/basemap/*.geojson`, from `scripts/build_basemap_overlays.py`. They are drawn over the
-basemap tiles. They were converted from the 2015 CD1 shapefiles in `basemap/data/`, but the
-script no longer reads those (the zips stay in the repo as part of the Mapbox Studio
-project).
+basemap tiles.
 
 | File | Source and processing |
 |---|---|
 | `truck_routes_through.geojson`, `truck_routes_local.geojson` | NYC DOT **New York City Truck Routes**, NYC Open Data `jjja-shxy` (updated 2026-03-02). Split on `routetype` (`Through` / `Local`), clipped to the study area + 300 m, merged per street and simplified at 2 m. The buffer takes in some Queens and Manhattan approaches across Newtown Creek and the East River. Property: `street` (title case). Through: 58 streets; local: 110. |
-| `zip_boundaries.geojson` | U.S. Census Bureau **2020 ZIP Code Tabulation Areas**, TIGERweb `PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1`. A ZCTA is used when at least 10% of its land area (`AREALAND`) lies inside the districts. The shares split into two groups: 0.2–1.0, and under 0.001 for the rest. Draws the ZCTA boundaries inside the districts, leaving out a 25 m band along the outline (the mask draws the outline). Simplified at 2 m; no properties. |
+| `zip_boundaries.geojson` | U.S. Census Bureau **2020 ZIP Code Tabulation Areas**, TIGERweb `PUMA_TAD_TAZ_UGA_ZCTA/MapServer/1`. A ZCTA is used when at least 10% of its land area (`AREALAND`) lies inside the districts. Draws the ZCTA boundaries inside the districts, leaving out a 25 m band along the outline (the mask draws the outline). Simplified at 2 m; no properties. |
 | `zip_labels.geojson` | One point per selected ZCTA: `representative_point()` of the largest part of the ZCTA inside the districts. Property: `zipcode`. ZCTAs: 11201, 11205, 11206, 11207, 11211, 11217, 11221, 11222, 11237, 11238, 11249. |
-| `area_mask.geojson` | The districts' bounding box plus 0.1° on each side, minus the dissolved districts (simplified at 1.5 m). Drawn grey outside the study area. This file replaces `cd1_mask.geojson`. |
+| `area_mask.geojson` | The districts' bounding box plus 0.1° on each side, minus the dissolved districts (simplified at 1.5 m). Drawn grey outside the study area. |
 
 Why Census ZCTAs and not DOHMH MODZCTA (`pri4-ifjk`): MODZCTA merges 11249 into 11211
 (label "11211, 11249") and 11243 into 11217. Williamsburg's waterfront ZIP code would

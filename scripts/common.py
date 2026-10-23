@@ -1,6 +1,6 @@
 """Shared helpers for rebuilding the ToxiCity map data layers.
 
-Study area: Brooklyn Community Districts 1, 2 and 4 (see DISTRICTS) plus a ~200 m buffer.
+Study area: the community districts in DISTRICTS (AREA_NAME) plus a ~200 m buffer.
 
 Downloads are cached in $NAG_CACHE (default ~/.cache/nag-toxicology) so the
 scripts can be re-run cheaply; delete that directory to force fresh downloads.
@@ -28,6 +28,7 @@ CD_SERVICE = DCP + "/NYC_Community_Districts/FeatureServer/0"
 # Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill & the Navy Yard; 4 Bushwick
 DISTRICTS = (301, 302, 304)
 DISTRICTS_SQL = ",".join(str(d) for d in DISTRICTS)  # eg: where=f"CD IN ({DISTRICTS_SQL})"
+AREA_NAME = "Brooklyn Community Districts 1, 2 and 4"  # for display; keep in step with DISTRICTS
 BUFFER_M = 200.0
 
 UA = "nag-toxicology-data-rebuild/1.0 (+https://github.com/bash102/nag-toxicology)"
@@ -65,6 +66,11 @@ def xlsx_dicts(source):
     header = next(rows)
     return [{h: int(v) if isinstance(v, float) and v.is_integer() else v
              for h, v in zip(header, r)} for r in rows]
+
+
+def parts(g):
+    """The parts of a multi-part geometry or collection, or [g] for a single part."""
+    return getattr(g, "geoms", [g])
 
 
 def to_metric(geom):
@@ -213,9 +219,3 @@ def write_fc(name, features, meta=None):
     print(f"wrote {path}: {len(features)} features, {os.path.getsize(path)/1024:.1f} KB")
     return path
 
-
-__all__ = [
-    "DATA_DIR", "DCP", "arcgis_query", "districts", "feature", "fetch", "fetch_json",
-    "round_coords", "shape", "simplify", "socrata", "study_area", "to_metric",
-    "to_wgs84", "unary_union", "write_fc",
-]

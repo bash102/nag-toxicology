@@ -1,5 +1,5 @@
 """Build data/polluted_polygons.geojson: remediation / brownfield / Superfund site footprints
-in Brooklyn Community Districts 1, 2 and 4 (+200 m buffer).
+in the study area (common.DISTRICTS, +200 m buffer).
 
 Sources
 1. NYS DEC "Remediation Boundaries" (Remediation_Sites_Group_new FeatureServer layer 2,
@@ -10,8 +10,8 @@ Sources
 2. U.S. EPA "National NPL Superfund Site Boundaries (Public)" -- NPL site boundaries that
    intersect the study area.
 3. NYC Office of Environmental Remediation (OER) "OER Cleanup Sites" (NYC Open Data
-   3279-pp7v): sites enrolled in the NYC Voluntary Cleanup Program (VCP) in Brooklyn CDs 1, 2
-   and 4 (OER community_district in DISTRICTS).
+   3279-pp7v): sites enrolled in the NYC Voluntary Cleanup Program (VCP) in the study area
+   (OER community_district in DISTRICTS).
    OER publishes points + BBLs only, so the footprint is the union of the site's tax lots
    from NYC DCP MapPLUTO.
 """

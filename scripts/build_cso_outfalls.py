@@ -1,5 +1,5 @@
 """Build data/cso_outfalls.geojson: combined sewer overflow (CSO) outfalls discharging to the
-waters that border Brooklyn Community Districts 1, 2 and 4 (the Brooklyn bank of the East River
+waters that border the study area (common.DISTRICTS; the Brooklyn bank of the East River
 from Atlantic Avenue past DUMBO, the Navy Yard and Wallabout Bay to the mouth of Newtown Creek,
 and Newtown Creek with English Kills, East Branch, Maspeth Creek, Dutch Kills and Whale Creek),
 with NYC DEP's modeled overflow counts and volumes for the latest calendar year. The outfalls
@@ -20,9 +20,7 @@ Sources
 
 Selection: DEP CSO outfalls within the districts + 500 m, plus every outfall whose receiving
 water (per the BMP inventory) is Newtown Creek or one of its tributaries, wherever it is.
-Manhattan-bank East River outfalls (NCM-*) are excluded, although several on the Lower East Side
-lie within 500 m of DUMBO and the Navy Yard. The 500 m buffer also reaches the head of the
-Gowanus Canal (Red Hook WRRF outfalls RH-033, -034, -037, -038), which are included.
+Manhattan-bank East River outfalls (NCM-*) are excluded, although some lie within 500 m.
 
 Requires the `pdftotext` command-line tool (poppler-utils) to read the BMP report.
 """

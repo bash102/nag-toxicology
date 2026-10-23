@@ -1,9 +1,5 @@
-"""Build the basemap overlays in data/basemap/ for the study area (see common.DISTRICTS).
-
-The original basemap was a custom Mapbox Studio Classic style whose hosted tiles are no
-longer available, so its overlays are drawn client side instead. These used to be converted
-from the 2015 CD1-only shapefiles in basemap/data/; they are now rebuilt from current public
-data:
+"""Build the basemap overlays in data/basemap/ for the study area (see common.DISTRICTS),
+drawn client side over the base tiles, from current public data:
 
 - truck_routes_through.geojson / truck_routes_local.geojson: NYC DOT "New York City Truck
   Routes" (NYC Open Data jjja-shxy), split on `routetype`, clipped to the study area + 300 m
@@ -21,7 +17,7 @@ import os
 from shapely.geometry import box
 from shapely.ops import linemerge
 
-from common import (DATA_DIR, arcgis_query, districts, feature, shape, simplify, socrata,
+from common import (DATA_DIR, arcgis_query, districts, feature, parts, shape, simplify, socrata,
                     study_area, to_metric, to_wgs84, unary_union, write_fc)
 
 OUT = "basemap"
@@ -38,19 +34,21 @@ MASK_PAD_DEG = 0.1
 ACRONYMS = {"Bqe": "BQE", "Lie": "LIE", "Eb": "EB", "Wb": "WB", "Mcguinness": "McGuinness"}
 
 
+def merge_lines(g):
+    """Merge the LineString parts of a metric-space geometry into as few lines as possible."""
+    if g.geom_type in ("MultiLineString", "GeometryCollection"):
+        g = linemerge([p for p in parts(g) if p.geom_type == "LineString"])
+    return g
+
+
 def lines_metric(geom, tol_m=2.0):
     """Merge, simplify (in metres) and return a WGS84 (Multi)LineString."""
-    g = to_metric(geom)
-    if g.geom_type in ("MultiLineString", "GeometryCollection"):
-        g = linemerge([p for p in getattr(g, "geoms", [g]) if p.geom_type == "LineString"])
-    return to_wgs84(g.simplify(tol_m, preserve_topology=False))
+    return to_wgs84(merge_lines(to_metric(geom)).simplify(tol_m, preserve_topology=False))
 
 
 def truck_routes():
     area = study_area(TRUCK_BUFFER_M)
-    minx, miny, maxx, maxy = area.bounds
-    where = (f"intersects(the_geom, 'POLYGON(({minx} {miny}, {maxx} {miny}, {maxx} {maxy}, "
-             f"{minx} {maxy}, {minx} {miny}))')")
+    where = f"intersects(the_geom, '{box(*area.bounds).wkt}')"
     rows = socrata("data.cityofnewyork.us", TRUCK_ROUTES, where=where)
     by_type = {}
     for r in rows:
@@ -86,9 +84,8 @@ def zip_codes():
     # boundary lines between the ZCTAs, inside the districts (the mask draws the outline)
     inner = dist_m.buffer(-EDGE_M)
     edges = unary_union([to_metric(g).boundary for g in zctas.values()]).intersection(inner)
-    edges = linemerge([p for p in getattr(edges, "geoms", [edges]) if p.geom_type == "LineString"])
     # drop stubs left where a ZCTA edge wanders in and out of the band along the outline
-    edges = [e for e in getattr(edges, "geoms", [edges]) if e.length >= 50]
+    edges = [e for e in parts(merge_lines(edges)) if e.length >= 50]
     write_fc(os.path.join(OUT, "zip_boundaries.geojson"),
              [feature(to_wgs84(e.simplify(2.0)), {}) for e in edges])
 
@@ -96,7 +93,7 @@ def zip_codes():
     labels = []
     for z, g in sorted(zctas.items()):
         part = g.intersection(dist)
-        part = max(getattr(part, "geoms", [part]), key=lambda p: to_metric(p).area)
+        part = max(parts(part), key=lambda p: to_metric(p).area)
         labels.append(feature(part.representative_point(), {"zipcode": z}))
     write_fc(os.path.join(OUT, "zip_labels.geojson"), labels)
 
@@ -113,10 +110,6 @@ def main():
     truck_routes()
     zip_codes()
     mask()
-    old = os.path.join(DATA_DIR, OUT, "cd1_mask.geojson")  # replaced by area_mask.geojson
-    if os.path.exists(old):
-        os.remove(old)
-        print("removed", old)
 
 
 if __name__ == "__main__":

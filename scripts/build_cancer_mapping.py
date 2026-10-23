@@ -1,6 +1,6 @@
 """Build data/cancer_mapping.geojson: observed and expected cancer counts, 2011-2015,
 for the census block groups (2010 vintage) that make up the study area
-(Brooklyn Community Districts 1, 2 and 4).
+(common.DISTRICTS).
 
 Source: NYS DOH / NYS Cancer Registry, "Cancer Mapping Data: 2011-2015"
 (health.data.ny.gov dataset y4pv-ib8r, a zip "blob" published 2018-08-17). This is
@@ -24,7 +24,7 @@ import zipfile
 
 import shapefile  # pyshp
 
-from common import DISTRICTS, districts, feature, fetch, shape, simplify, to_metric, unary_union, write_fc, xlsx_dicts
+from common import AREA_NAME, DISTRICTS_SQL, districts, feature, fetch, shape, simplify, to_metric, unary_union, write_fc, xlsx_dicts
 
 ZIP_URL = ("https://health.data.ny.gov/api/views/y4pv-ib8r/files/"
            "313b3230-e2b0-4ee9-9063-dc30c6c04264?download=true"
@@ -134,10 +134,9 @@ def main():
         "years": "2011-2015",
         "geography": "2010 census block groups; some merged by DOH (geoid contains 'DOH', members "
                      "in merged_geoid10). Geometry: TIGER/Line 2010 block groups, clipped to "
-                     "Brooklyn Community Districts 1, 2 and 4.",
+                     f"{AREA_NAME}.",
         "selection": f"DOH regions with more than {int(MIN_SHARE * 100)}% of their land area (ALAND10) "
-                     "inside Brooklyn Community Districts 1, 2 and 4 "
-                     f"(BoroCD {', '.join(map(str, DISTRICTS))})",
+                     f"inside {AREA_NAME} (BoroCD {DISTRICTS_SQL})",
         "suppression": "No values are suppressed. To protect confidentiality DOH merged neighbouring "
                        "block groups until each area had at least 6 male and 6 female cancer cases in "
                        "total (12 cases if all one sex, e.g. prisons).",

@@ -1,6 +1,6 @@
 """Build data/waste_transfer_stations.geojson: waste transfer stations, C&D / recyclables
-handling, scrap-metal facilities and wastewater treatment plants in Brooklyn Community
-Districts 1, 2 and 4 + 200 m.
+handling, scrap-metal facilities and wastewater treatment plants in the study area
+(common.DISTRICTS) + 200 m.
 
 Sources
 1. NYS DEC "Solid Waste Management Facilities" (data.ny.gov 2fni-raj8; active facilities,
@@ -11,8 +11,8 @@ Sources
    not included.
 3. NYC DEP Wastewater Resource Recovery Facilities inside the study area (Newtown Creek WRRF in
    Greenpoint and Red Hook WRRF in the Brooklyn Navy Yard): NYC DEP data as published in the
-   NYC MOCEJ EJNYC "Wastewater Recovery Facilities" layer. Street addresses are the ones
-   registered in EPA ECHO/FRS.
+   NYC MOCEJ EJNYC "Wastewater Recovery Facilities" layer. The layer has no street
+   addresses, so WRRF_ADDRESS gives the ones registered in EPA ECHO/FRS.
 """
 import collections
 import re
@@ -33,10 +33,9 @@ DEC_TYPES = [
     (r"^VDF|Vehicle Dismantling", "Vehicle dismantling facility"),
 ]
 
-# street addresses as registered in EPA ECHO/FRS (the WRRF layer has none)
 WRRF_ADDRESS = {
-    "Newtown Creek WRRF": "301 Greenpoint Avenue, Brooklyn, NY 11222",
-    "Red Hook WRRF": "Marshall Street and Little Street, Brooklyn, NY 11205",
+    "Newtown Creek WRRF": "301 Greenpoint Avenue, Brooklyn, NY 11222 (address as registered in EPA ECHO/FRS)",
+    "Red Hook WRRF": "Marshall Street and Little Street, Brooklyn, NY 11205 (address as registered in EPA ECHO/FRS)",
 }
 
 ABBR = {"STREET": "ST", "AVENUE": "AVE", "BOULEVARD": "BLVD", "PLACE": "PL", "ROAD": "RD"}
@@ -142,8 +141,7 @@ def main():
                       "properties": {
                           "name": name.replace("WRRF", "Wastewater Resource Recovery Facility"),
                           "facility_type": "Wastewater treatment plant (NYC DEP)",
-                          "address": (f"{WRRF_ADDRESS[name]} (address as registered in EPA ECHO/FRS)"
-                                      if name in WRRF_ADDRESS else ""),
+                          "address": WRRF_ADDRESS.get(name, ""),
                           "borough": "Brooklyn",
                           "operator": "NYC Department of Environmental Protection",
                           "waste_types": f"Design capacity {p.get('Design_Cap')}; in operation since {p.get('In_Operati')}; "

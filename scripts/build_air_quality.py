@@ -1,6 +1,5 @@
 """Build data/air_pm25.geojson and data/air_no2.geojson: NYCCAS annual-average PM2.5 and NO2,
-classified into 5 bands and clipped to the study area
-(Brooklyn Community Districts 1, 2 and 4 + 200 m).
+classified into 5 bands and clipped to the study area (common.DISTRICTS + 200 m).
 
 Source: NYC DOHMH New York City Community Air Survey (NYCCAS), NYC Open Data file asset
 "NYCCAS Air Pollution Rasters" (q68s-8qxv). The zip holds ESRI grids at 300 m (984 ft)
@@ -24,17 +23,17 @@ import shapely
 from shapely.geometry import MultiPolygon, mapping, shape
 from shapely.ops import unary_union
 
-from common import CACHE_DIR, feature, fetch, simplify, study_area, write_fc
+from common import AREA_NAME, CACHE_DIR, feature, fetch, simplify, study_area, write_fc
 
 VIEW = "https://data.cityofnewyork.us/api/views/q68s-8qxv"
 SOURCE = ("NYC DOHMH New York City Community Air Survey (NYCCAS), "
           "NYC Open Data 'NYCCAS Air Pollution Rasters' (q68s-8qxv)")
 
-# Class breaks chosen from the range of cells touching the study area (Brooklyn CDs 1, 2 and 4
-# + 200 m) in the year-16 (2024) surfaces: PM2.5 5.78-8.48 ug/m3, NO2 12.90-20.93 ppb; equal-width
-# round-number bands (0.6 ug/m3, 2 ppb). Bands are [lo, hi); the top band
-# includes its upper edge. If a newer year falls outside these, the script stops so the
-# breaks can be revisited rather than silently dropping cells.
+# Class breaks chosen from the range of cells touching the study area (+ 200 m) in the
+# year-16 (2024) surfaces: PM2.5 5.78-8.48 ug/m3, NO2 12.90-20.93 ppb; equal-width
+# round-number bands (0.6 ug/m3, 2 ppb). Bands are [lo, hi); the top band includes its upper
+# edge. If a newer year falls outside these, the script stops so the breaks can be revisited
+# rather than silently dropping cells.
 POLLUTANTS = {
     "pm25": {
         "grid": "pm", "units": "µg/m³", "out": "air_pm25.geojson",
@@ -136,7 +135,7 @@ def build(zpath, names, key, cfg, area_ll):
         }))
     write_fc(cfg["out"], feats, meta={
         "description": f"NYCCAS modeled {period} {cfg['name']}, 5 classes, clipped to "
-                       "Brooklyn Community Districts 1, 2 and 4 + 200 m",
+                       f"{AREA_NAME} + 200 m",
         "nyccas_year": yr,
         "nyccas_grid": inner.rsplit("/", 1)[-1],
         "raster_crs": crs_txt,

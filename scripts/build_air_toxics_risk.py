@@ -1,6 +1,6 @@
 """Build data/air_toxics_risk.geojson: U.S. EPA AirToxScreen 2020 modeled lifetime
-cancer risk and respiratory hazard index for the census tracts of Brooklyn Community
-Districts 1, 2 and 4 (the study area, common.DISTRICTS).
+cancer risk and respiratory hazard index for the census tracts of the study area
+(common.DISTRICTS).
 
 Source: EPA Air Toxics Screening Assessment (AirToxScreen), 2020 assessment
 (the newest year with risk results; EPA has released only emissions and
@@ -29,7 +29,7 @@ import statistics
 import zipfile
 from collections import defaultdict
 
-from common import CACHE_DIR, DATA_DIR, DISTRICTS, fetch, write_fc, xlsx_rows
+from common import AREA_NAME, CACHE_DIR, DATA_DIR, DISTRICTS_SQL, fetch, write_fc, xlsx_rows
 
 YEAR = 2020
 FTP = "https://gaftp.epa.gov/rtrmodeling_public/AirToxScreen/2020"
@@ -211,7 +211,7 @@ def pctile(values, x):
 
 
 # --------------------------------------------------------------------------
-# Study area (CDs 1, 2, 4): cancer risk by pollutant
+# Study area: cancer risk by pollutant
 # --------------------------------------------------------------------------
 
 POLLUTANT_NAMES = {
@@ -260,7 +260,7 @@ def area_pollutants(area_ids):
 
 
 # --------------------------------------------------------------------------
-# Study area (CDs 1, 2, 4): respiratory hazard index from EPA exposure
+# Study area: respiratory hazard index from EPA exposure
 # concentrations and RfCs
 # --------------------------------------------------------------------------
 
@@ -338,7 +338,7 @@ def main():
     with open(os.path.join(DATA_DIR, "acs.geojson")) as f:
         tracts = json.load(f)["features"]
     ids = {t["properties"]["geoid"] for t in tracts}
-    assert len(ids) == 123, len(ids)
+    assert ids, "run build_acs.py first"
 
     nat = national_tracts(ids)
     T = nat["tracts"]
@@ -419,8 +419,7 @@ def main():
                   "rtrmodeling_public/AirToxScreen/2020), aggregated to 2020 census tracts; "
                   "geometry from data/acs.geojson",
         "assessment_year": YEAR,
-        "study_area": "Brooklyn Community Districts 1, 2 and 4 (BoroCD "
-                      + ", ".join(str(d) for d in DISTRICTS) + "): census tracts of data/acs.geojson",
+        "study_area": f"{AREA_NAME} (BoroCD {DISTRICTS_SQL}): census tracts of data/acs.geojson",
         "notes": "Screening-level modeled estimates. cancer_risk_per_million = population-"
                  "weighted mean over the tract's populated 2020 blocks of EPA's total "
                  "lifetime cancer risk (sum of all source types incl. secondary formation and "

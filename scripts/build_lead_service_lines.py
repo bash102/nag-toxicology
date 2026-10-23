@@ -1,13 +1,13 @@
 """Build data/lead_service_lines.geojson: NYC DEP water service line inventory
 (material of the private service line, one record per tax lot), aggregated to the
-123 census tracts of the study area (Brooklyn Community Districts 1, 2 and 4).
+census tracts of the study area (common.DISTRICTS).
 
 Source: NYC Open Data "Lead Service Line Location Coordinates" (jqfp-uff7), published
 by NYC DEP. It is the same inventory as DEP's ArcGIS layer
 NYC_WaterConnection_DEP25V11_202601_PG (January 2026 edition; identical record and
 category counts). One row per BBL with a tax-lot polygon, `material` and `record_ty`.
 
-Study-area membership: BBL listed in MapPLUTO with CD in DISTRICTS (301, 302, 304);
+Study-area membership: BBL listed in MapPLUTO with CD in DISTRICTS;
 inventory BBLs not in MapPLUTO (e.g. retired lots) are kept if their lot's representative
 point lies in the three districts.
 Tract assignment: lot representative point in tract polygon (data/acs.geojson);

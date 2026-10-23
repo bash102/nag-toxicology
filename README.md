@@ -1,7 +1,9 @@
-# NAG Brooklyn's Greenpoint - Williamsburg Toxicity Map
-An interactive map for [Neighbors Allied For Good Growth](http://nag-brooklyn.org/) showing pollution and demographic data in the neighborhoods of Greenpoint and Williamsburg in Brooklyn, New York.
+# North Brooklyn ToxiCity Map
+An interactive map of pollution, health and demographic data for Brooklyn Community Districts 1, 2 and 4: Greenpoint, Williamsburg, Bushwick, DUMBO, Downtown Brooklyn, Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill and the Navy Yard. Live at https://bash102.github.io/nag-toxicology/.
 
-Created Summer / Fall, 2015 for [Pratt](https://www.pratt.edu/)'s [Spatial Analysis and Visualization Initiative](https://www.pratt.edu/pratt-research-and-centers/spatial-analysis-visualization-initiative/).
+It began as the Greenpoint-Williamsburg ToxiCity Map, built for [Neighbors Allied For Good Growth](http://nag-brooklyn.org/).
+
+The original map was created in Summer / Fall 2015 for [Pratt](https://www.pratt.edu/)'s [Spatial Analysis and Visualization Initiative](https://www.pratt.edu/pratt-research-and-centers/spatial-analysis-visualization-initiative/).
 
 ## 2026 Update
 This is a fork of [clhenrick/greenpoint_williamsburg_toxicity_map](https://github.com/clhenrick/greenpoint_williamsburg_toxicity_map). By 2026 the original map had stopped working because every hosted service it relied on had shut down:
@@ -50,7 +52,7 @@ The scripts in `scripts/` download the public sources and write `data/`. They ne
 
 ```
 python3 scripts/build_all.py               # data layers
-python3 scripts/build_basemap_overlays.py  # truck routes, zip codes, CD1 mask
+python3 scripts/build_basemap_overlays.py  # truck routes, zip codes, study area mask
 ```
 
 ## Updating the Data Layers' Styles
@@ -63,7 +65,7 @@ See the `sql/` directory for the 2015 code that formatted the original data tabl
 The original custom basemap required [Mapbox Studio Classic](https://www.mapbox.com/mapbox-studio-classic/), which has been discontinued. The `basemap/` directory contains:
 
 - `tm2/`: the files specifying the styling of the basemap's tiles.
-- `data/`: zipped ESRI Shapefiles used by the basemap. These are also the source for `data/basemap/`.
+- `data/`: zipped ESRI Shapefiles used by the original basemap (Greenpoint and Williamsburg only). The map's overlays in `data/basemap/` are now built from current NYC data instead.
 - `toxicity-basemap.tm2z`: the project's styles and metadata in a compressed format.
 
 ## Contributors:

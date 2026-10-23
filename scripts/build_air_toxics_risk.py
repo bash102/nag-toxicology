@@ -1,5 +1,6 @@
 """Build data/air_toxics_risk.geojson: U.S. EPA AirToxScreen 2020 modeled lifetime
-cancer risk and respiratory hazard index for the census tracts of Brooklyn CD1.
+cancer risk and respiratory hazard index for the census tracts of Brooklyn Community
+Districts 1, 2 and 4 (the study area, common.DISTRICTS).
 
 Source: EPA Air Toxics Screening Assessment (AirToxScreen), 2020 assessment
 (the newest year with risk results; EPA has released only emissions and
@@ -28,7 +29,7 @@ import statistics
 import zipfile
 from collections import defaultdict
 
-from common import CACHE_DIR, DATA_DIR, fetch, write_fc, xlsx_rows
+from common import CACHE_DIR, DATA_DIR, DISTRICTS, fetch, write_fc, xlsx_rows
 
 YEAR = 2020
 FTP = "https://gaftp.epa.gov/rtrmodeling_public/AirToxScreen/2020"
@@ -140,21 +141,22 @@ def num(v):
 # National tract totals (for percentiles and context medians)
 # --------------------------------------------------------------------------
 
-def national_tracts(cd1_ids):
+def national_tracts(area_ids):
     """Population-weighted tract means of total cancer risk for every US tract,
     from the 13 regional block-by-source-group workbooks.
 
     Block total = sum of EPA's source-type columns (the published "Total Cancer
-    Risk" column is rounded to one significant figure). Also returns, for CD1
+    Risk" column is rounded to one significant figure). Also returns, for study-area
     tracts, population-weighted means of every source column."""
     cache = os.path.join(CACHE_DIR, "airtoxscreen2020_tract_totals.json")
     if os.path.exists(cache):
         with open(cache) as f:
             d = json.load(f)
-        if d.get("regions") == REGIONS and set(d["cd1_detail"]) == cd1_ids:
+        # area_ids, not area_detail's keys: unpopulated tracts have no detail entry
+        if d.get("regions") == REGIONS and set(d.get("area_ids", ())) == area_ids:
             return d
     tracts = {}       # geoid -> [pop, sum(pop*risk), n_blocks]
-    detail = {}       # CD1 geoid -> {col: sum(pop*risk)}
+    detail = {}       # study-area geoid -> {col: sum(pop*risk)}
     src_cols = None
     checks = {"blocks": 0}
     for reg in REGIONS:
@@ -182,15 +184,16 @@ def national_tracts(cd1_ids):
             t[0] += pop
             t[1] += pop * tot
             t[2] += 1
-            if g in cd1_ids:
+            if g in area_ids:
                 d = detail.setdefault(g, defaultdict(float))
                 for c, v in zip(cols, vals):
                     d[c] += pop * v
     out = {
         "tracts": {g: {"pop": p, "risk": (s / p if p else None), "n_blocks": n}
                    for g, (p, s, n) in tracts.items()},
-        "cd1_detail": {g: {c: v / tracts[g][0] for c, v in d.items()}
+        "area_detail": {g: {c: v / tracts[g][0] for c, v in d.items()}
                        for g, d in detail.items() if tracts[g][0]},
+        "area_ids": sorted(area_ids),
         "regions": REGIONS,
         "source_columns": src_cols,
         "checks": checks,
@@ -208,7 +211,7 @@ def pctile(values, x):
 
 
 # --------------------------------------------------------------------------
-# CD1: cancer risk by pollutant
+# Study area (CDs 1, 2, 4): cancer risk by pollutant
 # --------------------------------------------------------------------------
 
 POLLUTANT_NAMES = {
@@ -232,7 +235,7 @@ def pollutant_name(col):
     return POLLUTANT_NAMES.get(name, name[:1] + name[1:].lower())
 
 
-def cd1_pollutants(cd1_ids):
+def area_pollutants(area_ids):
     rows = xlsx_rows(cached_file(POLL_URL))
     header = [str(h).strip() for h in next(rows)]
     ix = {h: i for i, h in enumerate(header)}
@@ -245,7 +248,7 @@ def cd1_pollutants(cd1_ids):
             continue
         b = block_id(r[i_blk])
         g = b[:11]
-        if g not in cd1_ids:
+        if g not in area_ids:
             continue
         pop = num(r[i_pop])
         a = acc.setdefault(g, [0.0, defaultdict(float)])
@@ -257,7 +260,8 @@ def cd1_pollutants(cd1_ids):
 
 
 # --------------------------------------------------------------------------
-# CD1: respiratory hazard index from EPA exposure concentrations and RfCs
+# Study area (CDs 1, 2, 4): respiratory hazard index from EPA exposure
+# concentrations and RfCs
 # --------------------------------------------------------------------------
 
 def resp_rfcs():
@@ -291,7 +295,7 @@ def norm(s):
     return "".join(ch for ch in s.upper() if ch.isalnum())
 
 
-def cd1_resp_hi(cd1_ids, rfcs):
+def area_resp_hi(area_ids, rfcs):
     rows = xlsx_rows(cached_file(EXP_URL))
     header = [str(h).strip() if h is not None else "" for h in next(rows)]
     ix = {h: i for i, h in enumerate(header)}
@@ -311,7 +315,7 @@ def cd1_resp_hi(cd1_ids, rfcs):
             continue
         b = block_id(r[i_blk])
         g = b[:11]
-        if g not in cd1_ids:
+        if g not in area_ids:
             continue
         pop = num(r[i_pop])
         a = acc.setdefault(g, [0.0, defaultdict(float)])
@@ -334,7 +338,7 @@ def main():
     with open(os.path.join(DATA_DIR, "acs.geojson")) as f:
         tracts = json.load(f)["features"]
     ids = {t["properties"]["geoid"] for t in tracts}
-    assert len(ids) == 54, len(ids)
+    assert len(ids) == 123, len(ids)
 
     nat = national_tracts(ids)
     T = nat["tracts"]
@@ -349,9 +353,9 @@ def main():
     print(f"  {nat['checks']['blocks']} populated blocks; "
           f"{len(us)} US tracts (50 states + DC), {len(ny)} NY, {len(nyc)} NYC")
 
-    pol = cd1_pollutants(ids)
+    pol = area_pollutants(ids)
     rfcs = resp_rfcs()
-    hq, used, missing = cd1_resp_hi(ids, rfcs)
+    hq, used, missing = area_resp_hi(ids, rfcs)
     print(f"  respiratory HI from {len(used)} pollutants; no exposure column for: {missing}")
 
     feats = []
@@ -363,7 +367,7 @@ def main():
         props = {"geoid": g, "tract_label": p["tract_label"], "nta_name": p["nta_name"]}
         if has:
             risk = info["risk"]
-            det = nat["cd1_detail"][g]
+            det = nat["area_detail"][g]
             grp = defaultdict(float)
             for c, v in det.items():
                 grp[group_of(c)] += v
@@ -376,7 +380,7 @@ def main():
                 "top_cancer_pollutants": fmt_top(pol[g]),
                 "top_cancer_sources": fmt_top(grp),
                 # the same top-3 at EPA's detailed source-type level, leaving out
-                # secondary formation and background (nearly uniform across CD1)
+                # secondary formation and background (nearly uniform across the study area)
                 "top_cancer_source_types": fmt_top({
                     source_label(c): v for c, v in det.items()
                     if group_of(c) not in ("Secondary formation", "Background")}),
@@ -415,6 +419,8 @@ def main():
                   "rtrmodeling_public/AirToxScreen/2020), aggregated to 2020 census tracts; "
                   "geometry from data/acs.geojson",
         "assessment_year": YEAR,
+        "study_area": "Brooklyn Community Districts 1, 2 and 4 (BoroCD "
+                      + ", ".join(str(d) for d in DISTRICTS) + "): census tracts of data/acs.geojson",
         "notes": "Screening-level modeled estimates. cancer_risk_per_million = population-"
                  "weighted mean over the tract's populated 2020 blocks of EPA's total "
                  "lifetime cancer risk (sum of all source types incl. secondary formation and "

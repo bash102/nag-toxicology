@@ -174,7 +174,7 @@ app.layers = (function(){
           name: 'harbor_water_quality',
           url: 'data/harbor_water_quality.geojson',
           marker: styles.harborWaterQuality,
-          interactivity: "station, waterbody, water_quality_class, fecal_coliform_geomean, enterococci_geomean, do_mean_mg_l, pct_do_below_standard, n_samples, period, latest_sample_date, source",
+          interactivity: "station, waterbody, water_quality_class, fecal_coliform_geomean, enterococci_geomean, do_mean_mg_l, pct_do_below_standard, n_samples, period, latest_sample_date, note, source",
           percentFields: ["pct_do_below_standard"],
           fieldLabels: {
             water_quality_class: "Water quality",

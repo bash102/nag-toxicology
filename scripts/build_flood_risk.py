@@ -1,4 +1,5 @@
-"""Build data/flood_risk.geojson: 2050s future coastal-surge floodplains clipped to CD1 + 200 m.
+"""Build data/flood_risk.geojson: 2050s future coastal-surge floodplains clipped to the study area
+(Brooklyn Community Districts 1, 2 and 4 + 200 m).
 
 Source: NYC Mayor's Office of Climate & Environmental Justice (MOCEJ) EJNYC Mapper layers
 "Coastal Storm Surge Flooding: 2050s 1% Annual Chance Storm" (100-year) and

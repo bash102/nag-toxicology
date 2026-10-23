@@ -1,4 +1,5 @@
-"""Build data/acs.geojson: ACS 2020-2024 5-year estimates for census tracts covering CD1.
+"""Build data/acs.geojson: ACS 2020-2024 5-year estimates for census tracts covering the study area
+(Brooklyn Community Districts 1, 2 and 4).
 
 Sources
 - Tract polygons: NYC DCP "2020 Census Tracts" (clipped to shoreline), ArcGIS
@@ -11,13 +12,13 @@ Sources
 import csv
 import io
 
-from common import DCP, arcgis_query, cd1, feature, fetch, shape, simplify, study_area, to_metric, write_fc
+from common import DCP, arcgis_query, districts, feature, fetch, shape, simplify, study_area, to_metric, write_fc
 
 YEAR = 2024
 SF = f"https://www2.census.gov/programs-surveys/acs/summary_file/{YEAR}/table-based-SF/data/5YRData"
 GAZ = f"https://www2.census.gov/geo/docs/maps-data/data/gazetteer/{YEAR}_Gazetteer/{YEAR}_gaz_tracts_36.txt"
 TRACTS = DCP + "/NYC_Census_Tracts_for_2020_US_Census/FeatureServer/0"
-MIN_SHARE = 0.25  # keep tracts with >= 25% of their (land) area inside CD1
+MIN_SHARE = 0.25  # keep tracts with >= 25% of their (land) area inside the study area
 
 
 def read_sf_table(table, geoids):
@@ -42,7 +43,7 @@ def num(v):
 
 
 def main():
-    area = cd1()
+    area = districts()
     area_m = to_metric(area)
     tracts = arcgis_query(TRACTS, where="BoroCode='3'", geometry=study_area())
     keep = {}
@@ -93,7 +94,7 @@ def main():
             "percent_nonhispanic_black": pct(nh_black),
             "percent_nonhispanic_asian": pct(nh_asian),
             "percent_nonhispanic_white": pct(nh_white),
-            "share_in_cd1": round(share, 3),
+            "share_in_area": round(share, 3),
             "no_population": not tot,
             "acs_vintage": f"{YEAR-4}-{YEAR} ACS 5-year",
         }

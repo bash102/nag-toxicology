@@ -1,5 +1,5 @@
 """Build data/polluted_polygons.geojson: remediation / brownfield / Superfund site footprints
-in CD1 (+200 m buffer).
+in Brooklyn Community Districts 1, 2 and 4 (+200 m buffer).
 
 Sources
 1. NYS DEC "Remediation Boundaries" (Remediation_Sites_Group_new FeatureServer layer 2,
@@ -7,17 +7,18 @@ Sources
    Brownfield Cleanup, Voluntary Cleanup, Petroleum Remediation and RCRA sites.
    Attributes enriched from data.ny.gov "Environmental Remediation Sites" (c6ci-rzpg):
    current site class, contaminants, owner, institutional/engineering controls.
-2. U.S. EPA "National NPL Superfund Site Boundaries (Public)" -- Newtown Creek and
-   Meeker Avenue Plume.
+2. U.S. EPA "National NPL Superfund Site Boundaries (Public)" -- NPL site boundaries that
+   intersect the study area.
 3. NYC Office of Environmental Remediation (OER) "OER Cleanup Sites" (NYC Open Data
-   3279-pp7v): sites enrolled in the NYC Voluntary Cleanup Program (VCP) in Brooklyn CD1.
+   3279-pp7v): sites enrolled in the NYC Voluntary Cleanup Program (VCP) in Brooklyn CDs 1, 2
+   and 4 (OER community_district in DISTRICTS).
    OER publishes points + BBLs only, so the footprint is the union of the site's tax lots
    from NYC DCP MapPLUTO.
 """
 import collections
 import re
 
-from common import DCP, arcgis_query, feature, shape, simplify, socrata, study_area, unary_union, write_fc
+from common import DCP, DISTRICTS, arcgis_query, feature, shape, simplify, socrata, study_area, unary_union, write_fc
 
 DEC_POLYS = ("https://services6.arcgis.com/DZHaqZm9cxOD4CWM/arcgis/rest/services/"
              "Remediation_Sites_Group_new/FeatureServer/2")
@@ -129,8 +130,10 @@ def main():
         }))
 
     # 3. NYC OER Voluntary Cleanup Program sites -> MapPLUTO lot footprints
+    cds = ",".join(f"'{d % 100}'" for d in DISTRICTS)  # OER numbers districts within the borough
     oer = socrata("data.cityofnewyork.us", "3279-pp7v",
-                  where="borough='Brooklyn' and community_district='1' and oer_program like '%VCP (Enrolled)%'")
+                  where=f"borough='Brooklyn' and community_district in ({cds}) "
+                        "and oer_program like '%VCP (Enrolled)%'")
     bbls = sorted({b.strip() for r in oer for b in (r.get("bbl") or "").split(",") if b.strip()})
     lots = {}
     for i in range(0, len(bbls), 80):

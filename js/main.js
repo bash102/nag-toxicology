@@ -33,7 +33,7 @@ app.map = (function(w, d, $, H) {
     // create the Leaflet Map
     function initMap() {
         // the study area's bounds (see DISTRICTS in scripts/common.py) and a wider box that limits panning
-        var studyArea = L.latLngBounds([40.679, -74.004], [40.740, -73.896]),
+        var studyArea = L.latLngBounds([40.677, -74.004], [40.739, -73.896]),
             mapBounds = studyArea.pad(0.5);
 
         // map paramaters to pass to Leaflet

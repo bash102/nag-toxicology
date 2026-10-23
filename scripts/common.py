@@ -25,8 +25,9 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 DCP = "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services"
 CD_SERVICE = DCP + "/NYC_Community_Districts/FeatureServer/0"
 # Brooklyn community districts mapped: 1 Greenpoint & Williamsburg; 2 Downtown Brooklyn, DUMBO,
-# Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill & the Navy Yard; 4 Bushwick
-DISTRICTS = (301, 302, 304)
+# Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill & the Navy Yard; 3 Bedford-Stuyvesant;
+# 4 Bushwick
+DISTRICTS = (301, 302, 303, 304)
 DISTRICTS_SQL = ",".join(str(d) for d in DISTRICTS)  # eg: where=f"CD IN ({DISTRICTS_SQL})"
 _numbers = [str(d % 100) for d in DISTRICTS]
 AREA_NAME = "Brooklyn Community Districts " + (

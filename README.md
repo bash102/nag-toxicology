@@ -1,5 +1,5 @@
 # North Brooklyn ToxiCity Map
-An interactive map of pollution, health and demographic data for Brooklyn Community Districts 1, 2 and 4: Greenpoint, Williamsburg, Bushwick, DUMBO, Downtown Brooklyn, Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill and the Navy Yard. Live at https://bash102.github.io/nag-toxicology/.
+An interactive map of pollution, health and demographic data for Brooklyn Community Districts 1 through 4: Greenpoint, Williamsburg, Bushwick, Bedford-Stuyvesant, DUMBO, Downtown Brooklyn, Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill and the Navy Yard. Live at https://bash102.github.io/nag-toxicology/.
 
 It began as the Greenpoint-Williamsburg ToxiCity Map, built in Summer / Fall 2015 for [Neighbors Allied For Good Growth](http://nag-brooklyn.org/) and [Pratt](https://www.pratt.edu/)'s [Spatial Analysis and Visualization Initiative](https://www.pratt.edu/pratt-research-and-centers/spatial-analysis-visualization-initiative/).
 

@@ -57,38 +57,48 @@ Processing:
 
 | | |
 |---|---|
-| Rates | NYS Department of Health, **"Sub-County Data for Selected Health Outcomes in New York State, 2008-2012, 2013-2017"**, health.data.ny.gov dataset `vtby-z2yc` (`https://health.data.ny.gov/resource/vtby-z2yc.json`), from the NYS Environmental Public Health Tracking (EPHT) program. The underlying data is SPARCS hospital and emergency-department discharges. The dataset was last updated 2026-06-16. |
-| Geometry | The dataset's attached sub-county boundary shapefile `EPHT7p5k_2010_NYS.zip` (`https://health.data.ny.gov/api/views/vtby-z2yc/files/526acd4b-20f3-4ead-903d-d3194ddb2172?download=true&filename=EPHT7p5k_2010_NYS.zip`). In NYC these areas are 2010 Neighborhood Tabulation Areas (NTAs). |
-
-This is very likely the same SPARCS/EPHT source behind the original 2015 layer, which was
-"cases per 1,000 people, 2008–2012". No finer public geography exists. NYS publishes
-asthma counts by ZIP only for pediatric and young-adult admission indicators, and the NYC
-EH Data Portal works at UHF or community-district level, which gives a single value for
-each whole community district.
+| Rates | NYC Department of Health and Mental Hygiene, **Environment & Health Data Portal** open data, `https://github.com/nychealth/EHDP-data` (branch `production`, commit `cf418fd` of 2026-10-20; retrieved 2026-10-23). Indicator files `indicators/data/<IndicatorID>.json`, with `indicators/metadata/metadata.json`, `TimePeriods.json` and `geography/GeoLookup.csv`. The underlying data is SPARCS emergency-department (ED) visits with a principal diagnosis of asthma. |
+| Geometry | NYC DCP *2010 Neighborhood Tabulation Areas*: `https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2010/FeatureServer/0` |
 
 Processing:
-- `asthma_rate_per_1000_people` = the **crude asthma emergency-department visit rate,
-  2013–2017** (the most recent period), as an annual average per 10,000 residents
-  divided by 10.
-- `measure` = "Asthma emergency department visits per 1,000 residents per year (crude
-  rate, annual average)".
-- `period` = "2013–2017".
-- Extra properties:
-  - `asthma_ed_age_adjusted_per_1000`
-  - `asthma_hosp_crude_per_1000` (hospitalizations)
-  - `asthma_ed_crude_per_1000_2008_2012` (the same measure for the original map's period)
-  - `epht_id`
-  - `share_of_study_area` (the clipped polygon's share of the four districts' area)
-- NTA polygons are clipped to the boundary of Community Districts 1–4 (no
-  buffer). Slivers smaller than 2 ha are dropped. The result is 16 areas: Greenpoint,
-  North Side–South Side, Williamsburg, East Williamsburg, Bushwick North, Bushwick South,
-  Bedford, Stuyvesant Heights, Crown Heights North, DUMBO–Vinegar Hill–Downtown
-  Brooklyn–Boerum Hill, Fort Greene, Clinton Hill and Brooklyn Heights–Cobble Hill, plus
-  small parts (4–10 ha) of Ocean Hill, Prospect Heights and Park Slope–Gowanus that fall
-  inside the districts.
-- Note: the original layer probably showed 5-year *cumulative* cases per 1,000
-  (`asthma5y / totpop * 1000`, according to `sql/format_asthma.sql`). The new values are
-  annual rates, so they are about 1/5 of the old scale.
+- NTA rates are the **average annual rate per 10,000 residents of the age group, 2017–2019**
+  (TimePeriodID 282, the latest NTA period), GeoType `NTA2010`:
+  - `ed_adults_rate`: indicator 2384 (adults 18+), measure 1208 "Average annual rate" (crude).
+  - `ed_adults_age_adjusted_rate`: indicator 2384, measure 1209 "Average annual age-adjusted rate".
+  - `ed_5_17_rate`: indicator 2383, measure 1206.
+  - `ed_0_4_rate`: indicator 2378, measure 1193. It is **null everywhere** because the portal
+    publishes the age 4-and-under NTA rate for 2014–2016 only. That value is kept as
+    `ed_0_4_rate_2014_2016`.
+- EHDP NTA2010 GeoIDs are the county FIPS code × 100 + the NTA number (BK09 → 4709). The
+  script checks every code against the names in `GeoLookup.csv`.
+- `community_district` = the community district holding most of the NTA's clipped area.
+  `cd_ed_adults_rate` (indicator 2380, measure 1198) and `cd_ed_5_17_rate` (indicator 2379,
+  measure 1196) are that district's crude "Estimated annual rate" per 10,000 for the latest year,
+  `cd_period` = "2023". The crude rate is used because it matches the NTA crude rates. 2023
+  values: CD 1 43.8 / 74.3, CD 2 53.2 / 178.9, CD 3 123.8 / 219.2, CD 4 81.5 / 125.6 (adults /
+  age 5–17).
+- Other properties: `geography_name` (NTA name), `nta_code`, `rate_units`, `period`
+  ("2017–2019"), `notes` (portal flags such as "estimate based on small numbers"; none occur in
+  the study area), `source`.
+- NTA polygons are clipped to the boundary of Community Districts 1–4 (no buffer), and
+  slivers smaller than 2 ha are dropped. That leaves 17 areas. Small overlaps that remain:
+  Prospect Heights (4.9 ha), Ocean Hill (9.7 ha) and Park Slope–Gowanus (3.9 ha), each 1–5% of
+  the NTA. Crown Heights North is 22% inside (104 ha). `park-cemetery-etc-Brooklyn` (BK99,
+  156 ha: the Brooklyn Navy Yard and part of the cemeteries on the Bushwick edge) has no rates in the portal, so all its
+  values are null.
+- Study-area min–max per 10,000: `ed_adults_rate` 12.8–208.3, `ed_adults_age_adjusted_rate`
+  14.8–206.9, `ed_5_17_rate` 22.1–320.9, `ed_0_4_rate_2014_2016` 39.4–511.2.
+
+Caveats:
+- The rates are SPARCS-based ED visits coded with ICD-10 (2017–2019). They are **not
+  comparable** with the old 2013–2017 NYS EPHT layer (a different rate definition that
+  straddles the October 2015 ICD-9 → ICD-10 change) or with pre-2015 data. EHDP says adult
+  asthma is classified differently under ICD-9 and ICD-10. Childhood rates are comparable
+  across the change.
+- Rates use the population of each age group, so the adult, 5–17 and 0–4 rates should not be
+  compared with one another.
+- The CD values are single years (2023) for whole districts. Years after 2019 include the
+  COVID-19 drop in ED use. Use them as context only, not as a trend from the NTA values.
 
 ## flood_risk.geojson — `scripts/build_flood_risk.py`
 

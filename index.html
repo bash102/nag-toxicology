@@ -106,7 +106,7 @@
                 <div class="ngh">
                     <span class="subtitle"> &nbsp; Neighborhood Characteristics</span>
                     <br />
-                    <button class="data-layer" type="button" id="asthma" title="Asthma Rate">
+                    <button class="data-layer" type="button" id="asthma" title="Asthma Emergency Visits">
                         <i class="fa fa-hospital-o fa-2x"></i>
                     </button>
                     <button class="data-layer" type="button" id="acs_income" title="Median Household Income">
@@ -121,6 +121,10 @@
                     <button class="data-layer" type="button" id="cancer_mapping" title="Cancer Cases">
                         <i class="fa fa-user-md fa-2x"></i>
                     </button>
+                    <div class="layer-options" data-layer="asthma">
+                        <label for="asthma-measure">Age group:</label>
+                        <select id="asthma-measure"></select>
+                    </div>
                     <div class="layer-options" data-layer="health_conditions">
                         <label for="health-measure">Health condition:</label>
                         <select id="health-measure"></select>
@@ -202,7 +206,7 @@
                 </p>
                 <h3>Asthma Rates</h3>
                 <p>
-                    Living near truck routes, highways and other sources of air pollution can trigger and worsen asthma. This layer shows the yearly rate of emergency room visits for asthma from 2013 to 2017, by neighborhood. This data comes from the New York State Department of Health’s <a target="_blank" href="https://health.data.ny.gov/Health/Sub-County-Data-for-Selected-Health-Outcomes-in-Ne/vtby-z2yc">Environmental Public Health Tracking program</a>, which is based on hospital discharge records (SPARCS).
+                    Living near truck routes, highways and other sources of air pollution can trigger and worsen asthma. This layer shows the yearly rate of emergency room visits for asthma by neighborhood, for adults and for children ages 5 to 17 in 2017-2019, and for children 4 and under in 2014-2016 (the latest the city publishes by neighborhood). Pick an age group from the menu under the button. Each neighborhood's popup also shows its community district's rates for 2023, the latest year available; visits dropped citywide after 2020, partly because of the COVID-19 pandemic, so the district figures are not a trend from the neighborhood rates. The data comes from the NYC Health Department's <a target="_blank" href="https://a816-dohbesp.nyc.gov/IndicatorPublic/">Environment &amp; Health Data Portal</a>, based on hospital records (SPARCS). Rates for different age groups use different populations and should not be compared with each other.
                 </p>
                 <h3>Health Conditions</h3>
                 <p>

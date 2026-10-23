@@ -42,7 +42,18 @@ app.layers = (function(){
           choropleth: true,
           url: 'data/asthma.geojson',
           style: styles.asthma,
-          interactivity: "geography_name, asthma_rate_per_1000_people, measure, period"
+          interactivity: "geography_name, ed_adults_rate, ed_5_17_rate, period, ed_0_4_rate_2014_2016, community_district, cd_ed_adults_rate, cd_ed_5_17_rate, cd_period, notes",
+          fieldLabels: {
+            geography_name: "Neighborhood",
+            ed_adults_rate: "Adults: ER visits per 10,000 per year",
+            ed_5_17_rate: "Ages 5 to 17: ER visits per 10,000 per year",
+            period: "Years",
+            ed_0_4_rate_2014_2016: "Ages 4 and under, 2014-2016: ER visits per 10,000 per year",
+            community_district: "Community district",
+            cd_ed_adults_rate: "District, adults: ER visits per 10,000",
+            cd_ed_5_17_rate: "District, ages 5 to 17: ER visits per 10,000",
+            cd_period: "District figures year"
+          }
       }, {
           name: 'flood_risk',
           url: 'data/flood_risk.geojson',

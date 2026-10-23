@@ -1,5 +1,6 @@
 """Build data/asthma.geojson: asthma emergency-department visit rates for the
-NYS Environmental Public Health Tracking (EPHT) sub-county areas covering CD1.
+NYS Environmental Public Health Tracking (EPHT) sub-county areas covering the study area
+(common.DISTRICTS).
 
 Source: NYS DOH, "Sub-County Data for Selected Health Outcomes in New York State,
 2008-2012, 2013-2017" (health.data.ny.gov dataset vtby-z2yc; SPARCS data), and the
@@ -7,24 +8,24 @@ dataset's attached sub-county boundary shapefile EPHT7p5k_2010_NYS.zip. In NYC t
 sub-county areas are 2010 Neighborhood Tabulation Areas (NTAs).
 
 Rates are published per 10,000 (annual average); we divide by 10 to get per 1,000.
-Polygons are clipped to the CD1 boundary.
+Polygons are clipped to the boundary of the three districts.
 """
 import io
 import zipfile
 
 import shapefile  # pyshp
 
-from common import cd1, feature, fetch, shape, simplify, socrata, to_metric, write_fc
+from common import districts, feature, fetch, shape, simplify, socrata, to_metric, write_fc
 
 DATASET = "vtby-z2yc"
 SHP_URL = ("https://health.data.ny.gov/api/views/vtby-z2yc/files/"
            "526acd4b-20f3-4ead-903d-d3194ddb2172?download=true&filename=EPHT7p5k_2010_NYS.zip")
 PERIOD = "2013-2017"          # most recent period in the dataset
-MIN_AREA_M2 = 20000           # drop slivers of neighbouring NTAs (< 2 ha inside CD1)
+MIN_AREA_M2 = 20000           # drop slivers of neighbouring NTAs (< 2 ha inside the districts)
 
 
 def main():
-    area = cd1()
+    area = districts()
     area_m = to_metric(area)
 
     z = zipfile.ZipFile(io.BytesIO(fetch(SHP_URL, binary=True)))
@@ -74,7 +75,7 @@ def main():
             "asthma_ed_age_adjusted_per_1000": rate(eid, PERIOD, "ED Visits", "age-adjusted"),
             "asthma_hosp_crude_per_1000": rate(eid, PERIOD, "Hospitalizations", "crude"),
             "asthma_ed_crude_per_1000_2008_2012": rate(eid, "2008-2012", "ED Visits", "crude"),
-            "share_of_area_in_cd1": round(to_metric(g).area / area_m.area, 3),
+            "share_of_study_area": round(to_metric(g).area / area_m.area, 3),
             "source": "NYS DOH Environmental Public Health Tracking / SPARCS (health.data.ny.gov vtby-z2yc)",
         }
         feats.append(feature(simplify(g, 1.5), props))

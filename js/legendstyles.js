@@ -2,6 +2,15 @@
 var app = app || {};
 
 app.legends = (function(){
+
+  // legend items for bands between consecutive edges, eg: ['12', '14', '16'] -> "12 - 14", "14 - 16"
+  // the air quality edges match the band breaks in scripts/build_air_quality.py
+  function bands(edges, colors) {
+    return colors.map(function(color, i) {
+      return { color : color, label : edges[i] + ' - ' + edges[i + 1] };
+    });
+  }
+
   return {
     acs_pop : {
       title : "Population Density",
@@ -136,14 +145,14 @@ app.legends = (function(){
       title : "Fine Particles (PM2.5)",
       subtitle : "Annual average, µg/m³, 2024",
       type : 'polygon',
-      items : [{ color : app.styles.pm25Colors[0], label : "6.5 - 6.9" },{ color : app.styles.pm25Colors[1], label : "6.9 - 7.3" },{ color : app.styles.pm25Colors[2], label : "7.3 - 7.7" },{ color : app.styles.pm25Colors[3], label : "7.7 - 8.1" },{ color : app.styles.pm25Colors[4], label : "8.1 - 8.5" }]
+      items : bands(['5.6', '6.2', '6.8', '7.4', '8.0', '8.6'], app.styles.pm25Colors)
     },
 
     air_no2 : {
       title : "Nitrogen Dioxide (NO2)",
       subtitle : "Annual average, ppb, 2024",
       type : 'polygon',
-      items : [{ color : app.styles.no2Colors[0], label : "14.5 - 15.5" },{ color : app.styles.no2Colors[1], label : "15.5 - 16.5" },{ color : app.styles.no2Colors[2], label : "16.5 - 17.5" },{ color : app.styles.no2Colors[3], label : "17.5 - 18.5" },{ color : app.styles.no2Colors[4], label : "18.5 - 20.0" }]
+      items : bands(['12', '14', '16', '18', '20', '22'], app.styles.no2Colors)
     },
 
     // depends on the health condition picked in the map layers menu
@@ -204,7 +213,7 @@ app.legends = (function(){
 
     harbor_water_quality : {
       title : "Harbor Water Quality",
-      subtitle : "Fecal coliform, geometric mean per 100 mL, 2023-2025",
+      subtitle : "Fecal coliform, geometric mean per 100 mL, 2023-2025 (lighter dots: older years, see popup)",
       type : 'point-large',
       items : [
         { color : app.styles.harborColors[0], label : "200 or less (meets NYS standard)" },

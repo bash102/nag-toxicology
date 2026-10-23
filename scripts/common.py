@@ -1,7 +1,6 @@
 """Shared helpers for rebuilding the ToxiCity map data layers.
 
-Study area: Brooklyn Community District 1 (BoroCD 301, Greenpoint + Williamsburg)
-plus a ~200 m buffer.
+Study area: the community districts in DISTRICTS (AREA_NAME) plus a ~200 m buffer.
 
 Downloads are cached in $NAG_CACHE (default ~/.cache/nag-toxicology) so the
 scripts can be re-run cheaply; delete that directory to force fresh downloads.
@@ -25,6 +24,13 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 DCP = "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services"
 CD_SERVICE = DCP + "/NYC_Community_Districts/FeatureServer/0"
+# Brooklyn community districts mapped: 1 Greenpoint & Williamsburg; 2 Downtown Brooklyn, DUMBO,
+# Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill & the Navy Yard; 4 Bushwick
+DISTRICTS = (301, 302, 304)
+DISTRICTS_SQL = ",".join(str(d) for d in DISTRICTS)  # eg: where=f"CD IN ({DISTRICTS_SQL})"
+_numbers = [str(d % 100) for d in DISTRICTS]
+AREA_NAME = "Brooklyn Community Districts " + (
+    _numbers[0] if len(_numbers) == 1 else ", ".join(_numbers[:-1]) + " and " + _numbers[-1])
 BUFFER_M = 200.0
 
 UA = "nag-toxicology-data-rebuild/1.0 (+https://github.com/bash102/nag-toxicology)"
@@ -62,6 +68,11 @@ def xlsx_dicts(source):
     header = next(rows)
     return [{h: int(v) if isinstance(v, float) and v.is_integer() else v
              for h, v in zip(header, r)} for r in rows]
+
+
+def parts(g):
+    """The parts of a multi-part geometry or collection, or [g] for a single part."""
+    return getattr(g, "geoms", [g])
 
 
 def to_metric(geom):
@@ -161,22 +172,23 @@ def socrata(domain, dataset, where=None, select=None, limit=50000, order=":id"):
     return rows
 
 
-_cd1 = None
+_districts = None
 
 
-def cd1():
-    """CD1 (BoroCD 301) polygon in WGS84 (DCP 'NYC_Community_Districts', clipped to shoreline)."""
-    global _cd1
-    if _cd1 is None:
-        feats = arcgis_query(CD_SERVICE, where="BoroCD=301")
-        assert len(feats) == 1, feats
-        _cd1 = shape(feats[0]["geometry"]).buffer(0)
-    return _cd1
+def districts():
+    """The study area's community districts (DISTRICTS), dissolved into one WGS84 polygon
+    (DCP 'NYC_Community_Districts', clipped to shoreline)."""
+    global _districts
+    if _districts is None:
+        feats = arcgis_query(CD_SERVICE, where=f"BoroCD IN ({DISTRICTS_SQL})")
+        assert len(feats) == len(DISTRICTS), feats
+        _districts = unary_union([shape(f["geometry"]).buffer(0) for f in feats])
+    return _districts
 
 
 def study_area(buffer_m=BUFFER_M):
-    """CD1 buffered by `buffer_m` metres, in WGS84."""
-    return to_wgs84(to_metric(cd1()).buffer(buffer_m))
+    """The study area's districts buffered by `buffer_m` metres, in WGS84."""
+    return to_wgs84(to_metric(districts()).buffer(buffer_m))
 
 
 def round_coords(obj, nd=6):
@@ -209,9 +221,3 @@ def write_fc(name, features, meta=None):
     print(f"wrote {path}: {len(features)} features, {os.path.getsize(path)/1024:.1f} KB")
     return path
 
-
-__all__ = [
-    "DATA_DIR", "DCP", "arcgis_query", "cd1", "feature", "fetch", "fetch_json",
-    "round_coords", "shape", "simplify", "socrata", "study_area", "to_metric",
-    "to_wgs84", "unary_union", "write_fc",
-]

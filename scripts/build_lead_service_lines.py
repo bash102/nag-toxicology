@@ -1,14 +1,15 @@
 """Build data/lead_service_lines.geojson: NYC DEP water service line inventory
 (material of the private service line, one record per tax lot), aggregated to the
-54 census tracts of Brooklyn CD1.
+census tracts of the study area (common.DISTRICTS).
 
 Source: NYC Open Data "Lead Service Line Location Coordinates" (jqfp-uff7), published
 by NYC DEP. It is the same inventory as DEP's ArcGIS layer
 NYC_WaterConnection_DEP25V11_202601_PG (January 2026 edition; identical record and
 category counts). One row per BBL with a tax-lot polygon, `material` and `record_ty`.
 
-CD1 membership: BBL listed in MapPLUTO with CD = 301; inventory BBLs not in MapPLUTO
-(e.g. retired lots) are kept if their lot's representative point lies in CD1.
+Study-area membership: BBL listed in MapPLUTO with CD in DISTRICTS;
+inventory BBLs not in MapPLUTO (e.g. retired lots) are kept if their lot's representative
+point lies in the three districts.
 Tract assignment: lot representative point in tract polygon (data/acs.geojson);
 points just outside the shoreline-clipped tracts (waterfront lots) go to the nearest tract.
 """
@@ -19,12 +20,12 @@ from collections import Counter
 from shapely.geometry import box
 from shapely.strtree import STRtree
 
-from common import DATA_DIR, DCP, arcgis_query, cd1, shape, socrata, to_metric, write_fc
+from common import DATA_DIR, DCP, DISTRICTS_SQL, arcgis_query, districts, shape, socrata, to_metric, write_fc
 
 DATASET = "jqfp-uff7"
 MAPPLUTO = DCP + "/MAPPLUTO/FeatureServer/0"
 INVENTORY_DATE = "2026-01"   # DEP edition DEP25V11_202601; Open Data rows updated 2026-01-30
-MAX_SNAP_M = 60              # max snap distance for lots not confirmed by MapPLUTO CD=301
+MAX_SNAP_M = 60              # max snap distance for lots not in MapPLUTO's study-area lots
 
 CATS = {
     "Lead": "lead",
@@ -42,21 +43,21 @@ def main():
     tgeoms_m = [to_metric(g) for g in tgeoms]
     tree = STRtree(tgeoms_m)
 
-    area = cd1()
+    area = districts()
     area_m = to_metric(area)
 
-    # MapPLUTO lots in CD1
-    pluto = arcgis_query(MAPPLUTO, where="CD=301", out_fields="BBL",
+    # MapPLUTO lots in the three districts
+    pluto = arcgis_query(MAPPLUTO, where=f"CD IN ({DISTRICTS_SQL})", out_fields="BBL",
                          extra={"returnGeometry": "false"})
-    cd1_bbls = {str(int(float(f["properties"]["BBL"]))) for f in pluto}
-    print(f"MapPLUTO CD=301 lots: {len(cd1_bbls)}")
+    area_bbls = {str(int(float(f["properties"]["BBL"]))) for f in pluto}
+    print(f"MapPLUTO lots with CD in ({DISTRICTS_SQL}): {len(area_bbls)}")
 
     minx, miny, maxx, maxy = area.buffer(0.003).bounds
     wkt = box(minx, miny, maxx, maxy).wkt
     rows = socrata("data.cityofnewyork.us", DATASET,
                    where=f"starts_with(tbbl,'3') AND intersects(the_geom,'{wkt}')",
                    select="tbbl,material,record_ty,city_owned,the_geom")
-    print(f"inventory lots in CD1 bounding box: {len(rows)}")
+    print(f"inventory lots in the study-area bounding box: {len(rows)}")
 
     counts = {t["properties"]["geoid"]: Counter() for t in tracts}
     rec_types = Counter()
@@ -73,7 +74,7 @@ def main():
         if not r.get("the_geom"):
             continue
         pt_m = to_metric(shape(r["the_geom"]).representative_point())
-        if bbl not in cd1_bbls:
+        if bbl not in area_bbls:
             if not area_m.contains(pt_m):
                 continue
             not_in_pluto.append(bbl)
@@ -81,7 +82,7 @@ def main():
         if not idx:
             # waterfront lots whose point falls outside the shoreline-clipped tracts
             i = int(tree.nearest(pt_m))
-            if bbl not in cd1_bbls and tgeoms_m[i].distance(pt_m) > MAX_SNAP_M:
+            if bbl not in area_bbls and tgeoms_m[i].distance(pt_m) > MAX_SNAP_M:
                 unmatched.append(bbl)
                 continue
             snapped.append((bbl, round(tgeoms_m[i].distance(pt_m))))
@@ -94,12 +95,12 @@ def main():
         cat_totals[cat] += 1
         rec_types[(cat, r.get("record_ty"))] += 1
 
-    print(f"CD1 lots assigned: {sum(cat_totals.values())}; unmatched: {unmatched}; "
-          f"kept by point-in-CD1 (not in MapPLUTO CD=301): {len(not_in_pluto)}")
+    print(f"study-area lots assigned: {sum(cat_totals.values())}; unmatched: {unmatched}; "
+          f"kept by point-in-districts (not in MapPLUTO CD {DISTRICTS_SQL}): {len(not_in_pluto)}")
     print(f"snapped to nearest tract (bbl, m): {snapped}")
-    missing_pluto = cd1_bbls - seen
-    print(f"MapPLUTO CD=301 lots absent from the inventory: {len(missing_pluto)}")
-    print("CD1 totals:", dict(cat_totals))
+    missing_pluto = area_bbls - seen
+    print(f"MapPLUTO study-area lots absent from the inventory: {len(missing_pluto)}")
+    print("study-area totals:", dict(cat_totals))
     for k, v in sorted(rec_types.items()):
         print("  ", k, v)
 

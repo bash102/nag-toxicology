@@ -32,24 +32,23 @@ app.map = (function(w, d, $, H) {
 
     // create the Leaflet Map
     function initMap() {
-        // bounding box for Williamsburg / Greenpoint to limit the map's panable area
-        var southWest = L.latLng(40.679628, -74.089720),
-            northEast = L.latLng(40.755792, -73.856475),
-            mapBounds = L.latLngBounds(southWest, northEast);
+        // the study area's bounds (see DISTRICTS in scripts/common.py) and a wider box that limits panning
+        var studyArea = L.latLngBounds([40.679, -74.004], [40.740, -73.896]),
+            mapBounds = studyArea.pad(0.5);
 
         // map paramaters to pass to Leaflet
         var params = {
-            center: [40.718640, -73.94], //Greenpoint
             zoomControl: false,
-            zoom: 14,
+            preferCanvas: true, // some data-layers have thousands of features
+            zoomSnap: 0.5,
             maxZoom: 19,
-            minZoom: 14,
+            minZoom: 12,
             scrollWheelZoom: false,
             maxBounds: mapBounds,
             attributionControl: true
         };
 
-        map_object = L.map('map', params);
+        map_object = L.map('map', params).fitBounds(studyArea);
 
         // the custom Mapbox basemap is no longer hosted, so use Esri's light gray canvas basemap
         // with the custom basemap's data layers (truck routes, zip codes) drawn on top of it
@@ -97,7 +96,7 @@ app.map = (function(w, d, $, H) {
         map_object.getPane('basemapOverlays').style.pointerEvents = 'none';
 
         var overlays = [{
-            url: 'data/basemap/cd1_mask.geojson',
+            url: 'data/basemap/area_mask.geojson',
             style: { fillColor: '#a0a090', fillOpacity: 0.3, stroke: false }
         }, {
             url: 'data/basemap/zip_boundaries.geojson',
@@ -462,22 +461,15 @@ app.map = (function(w, d, $, H) {
           map_object.zoomOut();
         });
 
-        // set the zoom out button to be initially not active
-        $('#zoom-out').addClass('not-active');
-
         // gray out the zoom button if user is at max-zoom or min-zoom
-        map_object.on('zoomend', function(){
+        function updateZoomButtons() {
             var curZoom = map_object.getZoom();
+            $('#zoom-in').toggleClass('not-active', curZoom >= map_object.getMaxZoom());
+            $('#zoom-out').toggleClass('not-active', curZoom <= map_object.getMinZoom());
+        }
 
-            if (curZoom === 19) {
-                $('#zoom-in').addClass('not-active');
-            } else if (curZoom === 14) {
-                $('#zoom-out').addClass('not-active');
-            } else {
-                $('#zoom-in').removeClass('not-active');
-                $('#zoom-out').removeClass('not-active');
-            }
-        });
+        map_object.on('zoomend', updateZoomButtons);
+        updateZoomButtons();
     };
 
     // fills each data-layer's measure picker, eg: health conditions, with the measures in app.styles.layerMeasures
@@ -508,6 +500,7 @@ app.map = (function(w, d, $, H) {
     return {
         init: init,
         sublayers : sublayers,
+        getMap : function() { return map_object; },
         hideShow : hideShow,
         renderLegend : renderLegend,
         getSubLayerIndex : getSubLayerIndex

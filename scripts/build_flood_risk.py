@@ -1,4 +1,5 @@
-"""Build data/flood_risk.geojson: 2050s future coastal-surge floodplains clipped to CD1 + 200 m.
+"""Build data/flood_risk.geojson: 2050s future coastal-surge floodplains clipped to the study area
+(common.DISTRICTS + 200 m).
 
 Source: NYC Mayor's Office of Climate & Environmental Justice (MOCEJ) EJNYC Mapper layers
 "Coastal Storm Surge Flooding: 2050s 1% Annual Chance Storm" (100-year) and
@@ -9,7 +10,7 @@ NYC Open Data still publishes the 2013 OLTPS/NPCC "Future Floodplain 2050s" (27y
 100-year only) but the matching 2050s 500-year layer is no longer on the portal, so the
 current MOCEJ pair is used for both storms for consistency.
 """
-from common import arcgis_query, feature, shape, simplify, study_area, to_metric, to_wgs84, unary_union, write_fc
+from common import arcgis_query, feature, parts, shape, simplify, study_area, to_metric, to_wgs84, unary_union, write_fc
 
 BASE = "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services"
 LAYERS = {
@@ -28,8 +29,8 @@ def main():
         g = unary_union(gs).intersection(area)
         # drop tiny specks (< 25 m2) left over from rasterised floodplain edges
         gm = to_metric(g)
-        parts = [p for p in getattr(gm, "geoms", [gm]) if p.area >= 25]
-        g = simplify(to_wgs84(unary_union(parts)), 1.5)
+        keep = [p for p in parts(gm) if p.area >= 25]
+        g = simplify(to_wgs84(unary_union(keep)), 1.5)
         feats.append(feature(g, {
             "storm": storm,
             "period": "2050s",

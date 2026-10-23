@@ -3,7 +3,8 @@
 category = highly_regulated | e_designation | spill_major | spill_minor
 
 highly_regulated  U.S. EPA ECHO (Enforcement and Compliance History Online) facility search,
-                  active facilities within CD1 + 200 m that are any of:
+                  active facilities within the study area (common.DISTRICTS) + 200 m
+                  that are any of:
                   - Clean Air Act major source (Title V, "Major Emissions")
                   - Clean Water Act major NPDES discharger
                   - current Toxics Release Inventory (TRI) reporter
@@ -14,14 +15,14 @@ highly_regulated  U.S. EPA ECHO (Enforcement and Compliance History Online) faci
                     only construction, real-estate, school, transit, bridge/road-work, remediation
                     or Con Edison manhole/vault jobs (mostly one-time generators) are excluded.
 e_designation     NYC DCP (E) Designations (nyedesignations feature service) on tax lots in
-                  Brooklyn CD1 (MapPLUTO CD = 301) with a hazardous-materials or air-quality
-                  requirement (noise-only E-designations excluded). Point = MapPLUTO lot
-                  centroid (DCP Latitude/Longitude).
+                  the study area (MapPLUTO CD in DISTRICTS) with a
+                  hazardous-materials or air-quality requirement (noise-only E-designations
+                  excluded). Point = MapPLUTO lot centroid (DCP Latitude/Longitude).
 spill_*           NYS DEC Spill Incidents (data.ny.gov u44d-k5fk), Kings County, spill date
                   2011-01-01 or later, geocoded with NYC GeoSearch (no coordinates in source)
-                  and kept if inside the CD1 boundary. spill_major = total reported quantity
-                  >= 100 gallons; everything else (smaller, unknown, or non-gallon units) is
-                  spill_minor.
+                  and kept if inside the districts' boundary (no buffer). spill_major =
+                  total reported quantity >= 100 gallons; everything else (smaller, unknown, or
+                  non-gallon units) is spill_minor.
 """
 import collections
 import json
@@ -33,7 +34,7 @@ import urllib.parse
 
 from shapely.geometry import Point
 
-from common import CACHE_DIR, DCP, arcgis_query, cd1, fetch, fetch_json, socrata, study_area, write_fc
+from common import CACHE_DIR, DCP, DISTRICTS_SQL, arcgis_query, districts, fetch_json, socrata, study_area, write_fc
 
 ECHO = "https://echodata.epa.gov/echo/echo_rest_services"
 ECHO_COLS = "1,2,3,5,6,16,17,19,20,21,23,24,28,32,33,34,38,62,75,97,104,105"
@@ -132,7 +133,7 @@ def highly_regulated(area):
 # --------------------------------------------------------------------------- (E) designations
 def e_designations():
     lots = {}
-    for f in arcgis_query(MAPPLUTO, where="CD=301 AND EDesigNum IS NOT NULL",
+    for f in arcgis_query(MAPPLUTO, where=f"CD IN ({DISTRICTS_SQL}) AND EDesigNum IS NOT NULL",
                           out_fields="BBL,Address,Latitude,Longitude,EDesigNum,LandUse",
                           extra={"returnGeometry": "false"}):
         p = f["properties"]
@@ -293,7 +294,7 @@ def spills(area):
         with open(_gc_path, "w") as f:
             json.dump(cache, f)
     print(f"spills: {len(by_num)} Kings spills since {SPILL_START}; {n_geo} geocoded to an address, "
-          f"{n_fail} without a usable address; {len(feats)} inside CD1")
+          f"{n_fail} without a usable address; {len(feats)} inside the districts")
     return feats
 
 
@@ -304,7 +305,7 @@ def main():
     print("highly_regulated:", len(hr))
     ed = e_designations()
     print("e_designation:", len(ed))
-    sp = spills(cd1())
+    sp = spills(districts())
     feats = hr + ed + sp
     write_fc("polluted_points.geojson", feats)
     print(collections.Counter(f["properties"]["category"] for f in feats))

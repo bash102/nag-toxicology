@@ -212,14 +212,14 @@ app.styles = (function(){
   // CDC PLACES measures, % of adults; keys match data/health_conditions.geojson
   var healthColors = ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'],
       healthMeasures = {
-        casthma: { label: 'Asthma', breaks: [9, 9.5, 10, 11.5] },
-        copd: { label: 'COPD', breaks: [2.5, 3.5, 5, 10] },
+        casthma: { label: 'Asthma', breaks: [9, 9.5, 10, 11] },
+        copd: { label: 'COPD', breaks: [2.5, 3, 4, 5.5] },
         cancer: { label: 'Cancer (excluding skin cancer)', breaks: [3.5, 4, 4.5, 5.5] },
-        chd: { label: 'Coronary heart disease', breaks: [2, 3, 4, 7] },
-        diabetes: { label: 'Diabetes', breaks: [4, 6, 9, 13] },
-        bphigh: { label: 'High blood pressure', breaks: [15, 18, 22, 30] },
-        mhlth: { label: 'Frequent poor mental health', breaks: [14, 15.5, 17, 20] },
-        csmoking: { label: 'Smoking', breaks: [6, 8, 11, 17] }
+        chd: { label: 'Coronary heart disease', breaks: [2.5, 3, 3.5, 4.5] },
+        diabetes: { label: 'Diabetes', breaks: [5, 6.5, 8, 10.5] },
+        bphigh: { label: 'High blood pressure', breaks: [17, 19.5, 22, 25] },
+        mhlth: { label: 'Frequent poor mental health', breaks: [14, 15, 16, 17.5] },
+        csmoking: { label: 'Smoking', breaks: [6.5, 8.5, 10.5, 14] }
       };
 
   function healthConditions(feature) {
@@ -304,7 +304,7 @@ app.styles = (function(){
 
   // EPA AirToxScreen modeled lifetime cancer risk from air toxics, per million people
   var airToxicsColors = ['#feedde', '#fdbe85', '#fd8d3c', '#e6550d', '#a63603'],
-      airToxicsBreaks = [35, 36, 37, 39];
+      airToxicsBreaks = [35, 35.5, 36, 37];
 
   function airToxicsRisk(feature) {
     return choropleth(feature.properties.cancer_risk_per_million, airToxicsBreaks, airToxicsColors);

@@ -1,6 +1,7 @@
 """Build data/harbor_water_quality.geojson: NYC DEP Harbor Survey Monitoring (HSM) stations in
-the waters bordering CD1 (East River off Greenpoint/Williamsburg; Newtown Creek, English Kills,
-East Branch), with bacteria and dissolved-oxygen summaries for the latest complete years.
+the waters near the study area (common.DISTRICTS; East River off Greenpoint; Newtown
+Creek, English Kills, East Branch; the head of the Gowanus Canal), with bacteria and
+dissolved-oxygen summaries for the latest complete years.
 
 Source: NYC Open Data "Harbor Water Quality" (5uug-f49n), NYC DEP Marine Sciences Section.
 
@@ -10,9 +11,8 @@ late 2022; about a third of the 2021 rows have lat and long swapped). A station'
 median of its valid recorded positions since 2016 (swapped pairs are corrected; values outside
 the harbor, e.g. "-74"/"41" or 0, are dropped).
 
-Selection: stations sampled since 2021-01-01 whose point is within 1 km of CD1. That yields
-E2 (East River) and NC0, NC0A, NC0B, NC1, NC2, NC3 (Newtown Creek and tributaries).
-NC0A was discontinued in May 2022 and replaced by NC0B ~200 m away.
+Selection: the STATIONS candidates sampled since ACTIVE_SINCE whose point is within
+MAX_DIST_M of the districts (the stations kept are listed in data/SOURCES.md).
 
 Summaries (per station, over PERIOD_YEARS, or for a discontinued station its last three
 calendar years with >= 20 sampling dates):
@@ -21,11 +21,11 @@ calendar years with >= 20 sampling dates):
 - DO: each depth's value is the Winkler titration result, else the CTD probe, else the YSI
   probe (DEP's summer YSI-only runs). Mean over all top and bottom values.
 - % of DO values below the NYS acute standard for the water's class (6 NYCRR 703.3): Class I
-  (East River) 4.0 mg/L "at any time"; Class SD (Newtown Creek and tributaries) 3.0 mg/L
-  "at any time". The share below 4.8 mg/L (the SA/SB/SC chronic daily-average standard) is
+  (East River) 4.0 mg/L "at any time"; Class SD (Newtown Creek and tributaries) and Class SC
+  (Gowanus Canal) 3.0 mg/L "at any time". The share below 4.8 mg/L (the SA/SB/SC chronic daily-average standard) is
   given as well, for comparison.
 - water_quality_class: period geomean of fecal coliform against the 6 NYCRR 703.4(b) standard
-  for Class I and SD waters, "monthly geometric mean, from a minimum of five examinations,
+  for Class I, SC and SD waters, "monthly geometric mean, from a minimum of five examinations,
   shall not exceed 200" per 100 mL. As a closer check on the standard's form,
   fecal_months_evaluated / fecal_months_over_200 count the months with >= 5 surface results and
   those whose geometric mean is above 200.
@@ -36,7 +36,7 @@ import statistics
 
 from shapely.geometry import Point
 
-from common import cd1, feature, socrata, to_metric, write_fc
+from common import districts, feature, socrata, to_metric, write_fc
 
 DATASET = "5uug-f49n"
 PERIOD_YEARS = (2023, 2024, 2025)
@@ -45,7 +45,8 @@ MAX_DIST_M = 1000.0
 
 # Waterbody and NYS classification (6 NYCRR Part 890) by station. Waterbody names are assigned
 # from the station positions. Newtown Creek is Class SD; DEC proposed reclassifying it to
-# Class I on 2026-09-16 (comments due 2026-11-30), which is not yet adopted.
+# Class I on 2026-09-16 (comments due 2026-11-30), which is not yet adopted. The Gowanus Canal
+# was reclassified to Class SC effective 2025-10-15 (previously SD above the Gowanus Expressway).
 STATIONS = {
     "E2": ("East River (near the mouth of Newtown Creek)", "I"),
     "NC3": ("Newtown Creek", "SD"),
@@ -54,8 +55,11 @@ STATIONS = {
     "NC0": ("English Kills (Newtown Creek)", "SD"),
     "NC0A": ("East Branch (Newtown Creek)", "SD"),
     "NC0B": ("East Branch (Newtown Creek)", "SD"),
+    "GC3": ("Gowanus Canal", "SC"),
+    "GC4": ("Gowanus Canal", "SC"),
+    "GC5": ("Gowanus Canal", "SC"),
 }
-DO_STANDARD = {"I": 4.0, "SD": 3.0}
+DO_STANDARD = {"I": 4.0, "SD": 3.0, "SC": 3.0}  # acute ("at any time") standards
 FECAL_STANDARD = 200.0
 
 FIELDS = {
@@ -143,21 +147,27 @@ def main():
     last_year = max(int(r["sample_date"][:4]) for r in rows if r["sample_date"][5:7] == "12")
     assert last_year >= PERIOD_YEARS[-1], last_year
 
-    cd1_m = to_metric(cd1())
+    districts_m = to_metric(districts())
     feats = []
     for st, (waterbody, wclass) in STATIONS.items():
         srows = by_station.get(st, [])
         if not srows or max(r["sample_date"] for r in srows) < ACTIVE_SINCE:
             continue
         pt, npos = position(srows)
-        dist = cd1_m.distance(to_metric(pt))
+        dist = districts_m.distance(to_metric(pt))
         if dist > MAX_DIST_M:
             continue
-        dates_by_year = collections.Counter(int(r["sample_date"][:4]) for r in srows)
+        # the station's color is its fecal coliform level, so pick years by fecal sampling dates
+        fecal_dates = {r["sample_date"][:10] for r in srows
+                       if any(num(r.get(f)) is not None for f in FIELDS["fecal"])}
+        dates_by_year = collections.Counter(int(d[:4]) for d in fecal_dates)
         years = [y for y in PERIOD_YEARS if dates_by_year[y] >= 20]
         active = len(years) == len(PERIOD_YEARS)
         if not active:
             years = sorted(y for y, n in dates_by_year.items() if n >= 20 and y <= last_year)[-3:]
+        if not years:
+            print(st, "skipped: no year with 20 fecal coliform sampling dates")
+            continue
         prows = [r for r in srows if int(r["sample_date"][:4]) in years]
         fecal, entero, do = summarize(prows)
         fgm, egm = geomean(fecal), geomean(entero)
@@ -173,7 +183,8 @@ def main():
             "station": st,
             "waterbody": waterbody,
             "latest_sample_date": max(r["sample_date"] for r in srows)[:10],
-            "period": f"{years[0]}–{years[-1]}",
+            "period": (f"{years[0]}–{years[-1]}" if len(years) > 1 and years == list(range(years[0], years[-1] + 1))
+                       else ", ".join(str(y) for y in years)),
             "n_samples": len(prows),
             "fecal_coliform_geomean": round(fgm) if fgm is not None else None,
             "enterococci_geomean": round(egm) if egm is not None else None,
@@ -194,8 +205,13 @@ def main():
             "position_basis": f"median of {npos} recorded sample positions since 2016",
         }
         if not active:
-            props["note"] = ("Discontinued after 2022-05; replaced by NC0B" if st == "NC0A"
-                             else "Not sampled in every year of the standard period")
+            if st == "NC0A":
+                props["note"] = "Discontinued after 2022-05; replaced by NC0B"
+            else:
+                thin = [y for y in PERIOD_YEARS if dates_by_year[y] < 20]
+                props["note"] = (f"Fecal coliform sampled on fewer than 20 dates in {', '.join(map(str, thin))}, "
+                                 f"so the summaries use {props['period']}, the latest years with at least "
+                                 f"20 sampling dates. Last fecal coliform result: {max(fecal_dates)}")
         feats.append(feature(pt, props))
         print(st, props["period"], props["n_samples"], fgm and round(fgm), egm and round(egm),
               props["do_mean_mg_l"], props["pct_do_below_standard"], props["pct_do_below_4_8"],

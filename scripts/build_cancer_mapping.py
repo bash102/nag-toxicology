@@ -1,5 +1,6 @@
 """Build data/cancer_mapping.geojson: observed and expected cancer counts, 2011-2015,
-for the census block groups (2010 vintage) that make up CD1.
+for the census block groups (2010 vintage) that make up the study area
+(common.DISTRICTS).
 
 Source: NYS DOH / NYS Cancer Registry, "Cancer Mapping Data: 2011-2015"
 (health.data.ny.gov dataset y4pv-ib8r, a zip "blob" published 2018-08-17). This is
@@ -10,7 +11,7 @@ y4pv-ib8r, not a newer release.
 The zip holds an .xlsx data table (one row per DOH region = 2010 block group, or a
 "DOH" merger of block groups) and a geoid10 -> DOH region crosswalk. It has no
 geometry, so polygons come from TIGER/Line 2010 block groups for Kings County,
-dissolved per DOH region and clipped to the CD1 boundary.
+dissolved per DOH region and clipped to the boundary of the three districts.
 
 Significance (`<key>_sig`) is DOH's own `highlight_<site>` flag: whether the block
 group lies inside a "highlighted area" found by DOH's spatial scan statistic
@@ -23,7 +24,7 @@ import zipfile
 
 import shapefile  # pyshp
 
-from common import cd1, feature, fetch, shape, simplify, to_metric, unary_union, write_fc, xlsx_dicts
+from common import AREA_NAME, DISTRICTS_SQL, districts, feature, fetch, shape, simplify, to_metric, unary_union, write_fc, xlsx_dicts
 
 ZIP_URL = ("https://health.data.ny.gov/api/views/y4pv-ib8r/files/"
            "313b3230-e2b0-4ee9-9063-dc30c6c04264?download=true"
@@ -32,7 +33,7 @@ DATA_XLSX = "NYSDOH_CancerMapping_Data_2011_2015.xlsx"
 XWALK_XLSX = "NYSDOH_CancerMapping_Crosswalk_2011_2015.xlsx"
 TIGER_URL = "https://www2.census.gov/geo/tiger/TIGER2010/BG/2010/tl_2010_36047_bg10.zip"
 COUNTY = "36047"            # Kings
-MIN_SHARE = 0.5             # keep regions with more than half their land area in CD1
+MIN_SHARE = 0.5             # keep regions with more than half their land area in the districts
 
 # key -> (DOH column suffix, DOH label from the data dictionary, ICD-O-3 codes)
 SITES = {
@@ -66,7 +67,7 @@ SITES = {
 SIG = {1: "higher", -1: "lower", 0: "not significant"}
 
 def main():
-    area = cd1()
+    area = districts()
 
     z = zipfile.ZipFile(io.BytesIO(fetch(ZIP_URL, binary=True)))
     data = {str(r["Dohregion"]): r for r in xlsx_dicts(z.read(DATA_XLSX))
@@ -117,10 +118,10 @@ def main():
             props[f"{key}_exp"] = round(exp, 2)
             props[f"{key}_ratio"] = round(obs / exp, 2) if exp else None
             props[f"{key}_sig"] = SIG[hl] if hl is not None else None
-        props["share_in_cd1"] = round(min(share, 1.0), 3)
+        props["share_in_area"] = round(min(share, 1.0), 3)
         feats.append(feature(simplify(inside, 1.5), props))
 
-    print("regions touching CD1 (share of land area inside):")
+    print("regions touching the districts (share of land area inside):")
     for region, share in sorted(near, key=lambda x: x[1]):
         if share < 0.98:
             print(f"  {region} {share}{'  kept' if share > MIN_SHARE else ''}")
@@ -132,9 +133,10 @@ def main():
                   "provisional as of December 2017)",
         "years": "2011-2015",
         "geography": "2010 census block groups; some merged by DOH (geoid contains 'DOH', members "
-                     "in merged_geoid10). Geometry: TIGER/Line 2010 block groups, clipped to CD1.",
+                     "in merged_geoid10). Geometry: TIGER/Line 2010 block groups, clipped to "
+                     f"{AREA_NAME}.",
         "selection": f"DOH regions with more than {int(MIN_SHARE * 100)}% of their land area (ALAND10) "
-                     "inside CD1 (BoroCD 301)",
+                     f"inside {AREA_NAME} (BoroCD {DISTRICTS_SQL})",
         "suppression": "No values are suppressed. To protect confidentiality DOH merged neighbouring "
                        "block groups until each area had at least 6 male and 6 female cancer cases in "
                        "total (12 cases if all one sex, e.g. prisons).",

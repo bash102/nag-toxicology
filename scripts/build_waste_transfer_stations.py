@@ -1,5 +1,6 @@
 """Build data/waste_transfer_stations.geojson: waste transfer stations, C&D / recyclables
-handling, scrap-metal facilities and the Newtown Creek wastewater plant in CD1 + 200 m.
+handling, scrap-metal facilities and wastewater treatment plants in the study area
+(common.DISTRICTS) + 200 m.
 
 Sources
 1. NYS DEC "Solid Waste Management Facilities" (data.ny.gov 2fni-raj8; active facilities,
@@ -8,8 +9,10 @@ Sources
    licensed by NYC DCWP (datasource dca_operatingbusinesses) that are not already in the
    DEC list (matched on normalised street address). DSNY drop-off sites, garages etc. are
    not included.
-3. Newtown Creek Wastewater Resource Recovery Facility: NYC DEP data as published in the
-   NYC MOCEJ EJNYC "Wastewater Recovery Facilities" layer.
+3. NYC DEP Wastewater Resource Recovery Facilities inside the study area (Newtown Creek WRRF in
+   Greenpoint and Red Hook WRRF in the Brooklyn Navy Yard): NYC DEP data as published in the
+   NYC MOCEJ EJNYC "Wastewater Recovery Facilities" layer. The layer has no street
+   addresses, so WRRF_ADDRESS gives the ones registered in EPA ECHO/FRS.
 """
 import collections
 import re
@@ -29,6 +32,11 @@ DEC_TYPES = [
     (r"^Scrap metal", "Scrap metal processor"),
     (r"^VDF|Vehicle Dismantling", "Vehicle dismantling facility"),
 ]
+
+WRRF_ADDRESS = {
+    "Newtown Creek WRRF": "301 Greenpoint Avenue, Brooklyn, NY 11222 (address as registered in EPA ECHO/FRS)",
+    "Red Hook WRRF": "Marshall Street and Little Street, Brooklyn, NY 11205 (address as registered in EPA ECHO/FRS)",
+}
 
 ABBR = {"STREET": "ST", "AVENUE": "AVE", "BOULEVARD": "BLVD", "PLACE": "PL", "ROAD": "RD"}
 
@@ -122,15 +130,18 @@ def main():
                           "source": "NYC DCP Facilities Database (NYC Open Data ji82-xba5), source NYC DCWP licences",
                       }})
 
-    # 3. Newtown Creek WRRF
-    for f in arcgis_query(WRRF, where="Facility_N like '%Newtown%'"):
+    # 3. NYC DEP wastewater resource recovery facilities in the study area
+    for f in arcgis_query(WRRF, geometry=area):
         p = f["properties"]
         lon, lat = f["geometry"]["coordinates"]
+        if not area.contains(Point(lon, lat)):
+            continue
+        name = p["Facility_N"].strip()
         feats.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [round(lon, 6), round(lat, 6)]},
                       "properties": {
-                          "name": "Newtown Creek Wastewater Resource Recovery Facility",
+                          "name": name.replace("WRRF", "Wastewater Resource Recovery Facility"),
                           "facility_type": "Wastewater treatment plant (NYC DEP)",
-                          "address": "301 Greenpoint Avenue, Brooklyn, NY 11222 (address as registered in EPA ECHO/FRS)",
+                          "address": WRRF_ADDRESS.get(name, ""),
                           "borough": "Brooklyn",
                           "operator": "NYC Department of Environmental Protection",
                           "waste_types": f"Design capacity {p.get('Design_Cap')}; in operation since {p.get('In_Operati')}; "

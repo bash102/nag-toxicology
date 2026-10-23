@@ -1,7 +1,7 @@
-# NAG Brooklyn's Greenpoint - Williamsburg Toxicity Map
-An interactive map for [Neighbors Allied For Good Growth](http://nag-brooklyn.org/) showing pollution and demographic data in the neighborhoods of Greenpoint and Williamsburg in Brooklyn, New York.
+# North Brooklyn ToxiCity Map
+An interactive map of pollution, health and demographic data for Brooklyn Community Districts 1, 2 and 4: Greenpoint, Williamsburg, Bushwick, DUMBO, Downtown Brooklyn, Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill and the Navy Yard. Live at https://bash102.github.io/nag-toxicology/.
 
-Created Summer / Fall, 2015 for [Pratt](https://www.pratt.edu/)'s [Spatial Analysis and Visualization Initiative](https://www.pratt.edu/pratt-research-and-centers/spatial-analysis-visualization-initiative/).
+It began as the Greenpoint-Williamsburg ToxiCity Map, built in Summer / Fall 2015 for [Neighbors Allied For Good Growth](http://nag-brooklyn.org/) and [Pratt](https://www.pratt.edu/)'s [Spatial Analysis and Visualization Initiative](https://www.pratt.edu/pratt-research-and-centers/spatial-analysis-visualization-initiative/).
 
 ## 2026 Update
 This is a fork of [clhenrick/greenpoint_williamsburg_toxicity_map](https://github.com/clhenrick/greenpoint_williamsburg_toxicity_map). By 2026 the original map had stopped working because every hosted service it relied on had shut down:
@@ -13,7 +13,7 @@ This is a fork of [clhenrick/greenpoint_williamsburg_toxicity_map](https://githu
 The fork fixes this as follows:
 
 - **Map library:** the map now uses [Leaflet](https://leafletjs.com/) 1.9 directly, in place of cartodb.js and mapbox.js.
-- **Basemap:** [Esri's Light Gray Canvas](https://www.arcgis.com/home/item.html?id=8b3d38c0819547faa83f7b7aca80bd76) tiles are the base. The original basemap's truck routes, zip code boundaries and Community District 1 mask are drawn on top, from the shapefiles in `basemap/data/`.
+- **Basemap:** [Esri's Light Gray Canvas](https://www.arcgis.com/home/item.html?id=8b3d38c0819547faa83f7b7aca80bd76) tiles are the base. The original basemap's truck routes, zip code boundaries and study-area mask are drawn on top, rebuilt from current NYC data (`data/basemap/`).
 - **Address search:** it uses [NYC GeoSearch](https://geosearch.planninglabs.nyc/), a free Pelias geocoder from NYC Planning that needs no API key.
 - **Data layers:** they are rebuilt from current public data, such as ACS 2020-2024, NYS DOH asthma rates, NYC 2050s floodplains, EPA ECHO, NYC (E) designations, NYS DEC spills and remediation sites, NYC OER cleanup sites and DEC solid waste facilities. The layers are stored as GeoJSON in `data/`. See [`data/SOURCES.md`](data/SOURCES.md) for every source and processing step. These are new datasets, so values and site lists differ from the 2015 map.
 - **New layers (2026):** air pollution (NYC Community Air Survey PM2.5 and NO2), combined sewer overflow outfalls, harbor water quality, lead water service lines, and adult health conditions from CDC PLACES with a picker for the condition shown.
@@ -50,11 +50,11 @@ The scripts in `scripts/` download the public sources and write `data/`. They ne
 
 ```
 python3 scripts/build_all.py               # data layers
-python3 scripts/build_basemap_overlays.py  # truck routes, zip codes, CD1 mask
+python3 scripts/build_basemap_overlays.py  # truck routes, zip codes, study area mask
 ```
 
 ## Updating the Data Layers' Styles
-Layer styles are in `js/styles.js`, which is a port of the original CartoCSS. Legends are in `js/legendstyles.js`. If you change a layer's class breaks or colors, update both files.
+Layer styles are in `js/styles.js`, which is a port of the original CartoCSS. Legends are in `js/legendstyles.js`. The health conditions, cancer, air toxics and lead legends are built from the breaks and colors in `js/styles.js`; for the other layers, update both files when you change class breaks or colors.
 
 ## Original Data Processing in CartoDB
 See the `sql/` directory for the 2015 code that formatted the original data tables in CartoDB / Postgres.
@@ -63,7 +63,7 @@ See the `sql/` directory for the 2015 code that formatted the original data tabl
 The original custom basemap required [Mapbox Studio Classic](https://www.mapbox.com/mapbox-studio-classic/), which has been discontinued. The `basemap/` directory contains:
 
 - `tm2/`: the files specifying the styling of the basemap's tiles.
-- `data/`: zipped ESRI Shapefiles used by the basemap. These are also the source for `data/basemap/`.
+- `data/`: zipped ESRI Shapefiles used by the original basemap (Greenpoint and Williamsburg only). Not used by the current map.
 - `toxicity-basemap.tm2z`: the project's styles and metadata in a compressed format.
 
 ## Contributors:

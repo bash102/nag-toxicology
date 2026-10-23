@@ -1,5 +1,6 @@
 """Build data/health_conditions.geojson: CDC PLACES census-tract estimates of
-adult chronic-disease prevalence for the 54 census tracts of Brooklyn CD1.
+adult chronic-disease prevalence for the census tracts of the study area
+(common.DISTRICTS).
 
 Source: CDC PLACES "Local Data for Better Health, Census Tract Data, 2025 release"
 (data.cdc.gov Socrata dataset cwsq-ngmh). The 2025 release uses 2020 census tracts,
@@ -30,7 +31,7 @@ def main():
         acs = json.load(f)
     tracts = acs["features"]
     geoids = [t["properties"]["geoid"] for t in tracts]
-    assert len(geoids) == 54, len(geoids)
+    assert geoids, "run build_acs.py first"
 
     ids = ",".join(f"'{g}'" for g in geoids)
     ms = ",".join(f"'{m}'" for m in MEASURES)

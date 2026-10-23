@@ -580,14 +580,13 @@ Selection:
   - NC0: English Kills.
   - NC0B: East Branch.
   - NC0A: East Branch. Sampled 2019 to May 2022, then replaced by NC0B about 200 m away.
-    It is kept with `active: false`, a `note`, and its own period (2019–2021).
+    It is kept with `active: false`, a `note`, and its own period (2019; 2020–2021 had fewer
+    than 20 fecal coliform sampling dates).
   - GC3, GC4, GC5: Gowanus Canal, 477 m, 647 m and 872 m from CD 2. All are still sampled
-    (latest 2025-12-08), but on only 10–17 dates a year in 2022–2024 (GC4: none in 2024).
-    So they have `active: false` and use the fallback period, the latest three years with
-    at least 20 dates: **2020, 2021, 2025**. `period` lists those years, since they are not
-    consecutive, and a `note` explains. GC4 has no fecal coliform result after 2021-06-03,
-    so its fecal figures cover 2020–2021 only. GC3 and GC5 have no fecal results in
-    2023–2024.
+    (latest 2025-12-08), but on only 10–17 dates a year in 2022–2024. So they have
+    `active: false` and use the fallback period: the latest three years with at least 20
+    fecal coliform sampling dates (GC3 and GC5: 2020, 2021, 2025; GC4, which has no fecal
+    coliform result after 2021-06-03: 2018–2020). A `note` gives the last fecal result.
 - `waterbody` is assigned from each station's position, not from a DEP label. The dataset
   has none.
 
@@ -642,9 +641,9 @@ Results, 2023–2025:
 | NC1 | 438 | 67 | 5.2 | 17% |
 | NC0B | 834 | 113 | 4.8 | 25% |
 | NC0 | 519 | 121 | 3.9 | 39% |
-| NC0A (2019–2021) | 1,374 | 84 | 5.7 | 14% |
+| NC0A (2019) | 2,235 | 105 | 5.8 | 6% |
 | GC3 (2020, 2021, 2025) | 80 | 37 | 6.6 | 3% (<3.0) |
-| GC4 (2020, 2021, 2025; fecal 2020–2021) | 77 | 46 | 6.7 | 0% |
+| GC4 (2018–2020) | 111 | 44 | 7.9 | 3% |
 | GC5 (2020, 2021, 2025) | 196 | 58 | 6.4 | 4% |
 
 E2 and the three Gowanus stations meet the fecal standard; GC5 only just does, at 196.

@@ -30,7 +30,7 @@ ZCTA_LAYER = ("https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/"
 # (the shares fall into two groups: about 0.2 to 1, and under 0.001)
 ZCTA_MIN_SHARE = 0.10
 EDGE_M = 25.0  # drop ZIP boundary lines within this distance of the districts' outline
-MASK_PAD_DEG = 0.1
+MASK_PAD_DEG = 1.0  # wide enough to cover the view at the map's minimum zoom
 ACRONYMS = {"Bqe": "BQE", "Lie": "LIE", "Eb": "EB", "Wb": "WB", "Mcguinness": "McGuinness"}
 
 

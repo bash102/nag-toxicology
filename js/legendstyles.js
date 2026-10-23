@@ -213,7 +213,7 @@ app.legends = (function(){
 
     harbor_water_quality : {
       title : "Harbor Water Quality",
-      subtitle : "Fecal coliform, geometric mean per 100 mL, 2023-2025",
+      subtitle : "Fecal coliform, geometric mean per 100 mL, 2023-2025 (lighter dots: older years, see popup)",
       type : 'point-large',
       items : [
         { color : app.styles.harborColors[0], label : "200 or less (meets NYS standard)" },

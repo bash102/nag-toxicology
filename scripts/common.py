@@ -28,7 +28,9 @@ CD_SERVICE = DCP + "/NYC_Community_Districts/FeatureServer/0"
 # Fort Greene, Brooklyn Heights, Boerum Hill, Clinton Hill & the Navy Yard; 4 Bushwick
 DISTRICTS = (301, 302, 304)
 DISTRICTS_SQL = ",".join(str(d) for d in DISTRICTS)  # eg: where=f"CD IN ({DISTRICTS_SQL})"
-AREA_NAME = "Brooklyn Community Districts 1, 2 and 4"  # for display; keep in step with DISTRICTS
+_numbers = [str(d % 100) for d in DISTRICTS]
+AREA_NAME = "Brooklyn Community Districts " + (
+    _numbers[0] if len(_numbers) == 1 else ", ".join(_numbers[:-1]) + " and " + _numbers[-1])
 BUFFER_M = 200.0
 
 UA = "nag-toxicology-data-rebuild/1.0 (+https://github.com/bash102/nag-toxicology)"

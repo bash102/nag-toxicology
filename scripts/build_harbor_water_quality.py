@@ -157,11 +157,17 @@ def main():
         dist = districts_m.distance(to_metric(pt))
         if dist > MAX_DIST_M:
             continue
-        dates_by_year = collections.Counter(int(r["sample_date"][:4]) for r in srows)
+        # the station's color is its fecal coliform level, so pick years by fecal sampling dates
+        fecal_dates = {r["sample_date"][:10] for r in srows
+                       if any(num(r.get(f)) is not None for f in FIELDS["fecal"])}
+        dates_by_year = collections.Counter(int(d[:4]) for d in fecal_dates)
         years = [y for y in PERIOD_YEARS if dates_by_year[y] >= 20]
         active = len(years) == len(PERIOD_YEARS)
         if not active:
             years = sorted(y for y, n in dates_by_year.items() if n >= 20 and y <= last_year)[-3:]
+        if not years:
+            print(st, "skipped: no year with 20 fecal coliform sampling dates")
+            continue
         prows = [r for r in srows if int(r["sample_date"][:4]) in years]
         fecal, entero, do = summarize(prows)
         fgm, egm = geomean(fecal), geomean(entero)
@@ -177,7 +183,7 @@ def main():
             "station": st,
             "waterbody": waterbody,
             "latest_sample_date": max(r["sample_date"] for r in srows)[:10],
-            "period": (f"{years[0]}–{years[-1]}" if years == list(range(years[0], years[-1] + 1))
+            "period": (f"{years[0]}–{years[-1]}" if len(years) > 1 and years == list(range(years[0], years[-1] + 1))
                        else ", ".join(str(y) for y in years)),
             "n_samples": len(prows),
             "fecal_coliform_geomean": round(fgm) if fgm is not None else None,
@@ -203,13 +209,9 @@ def main():
                 props["note"] = "Discontinued after 2022-05; replaced by NC0B"
             else:
                 thin = [y for y in PERIOD_YEARS if dates_by_year[y] < 20]
-                note = (f"Sampled on fewer than 20 dates in {', '.join(map(str, thin))}, so the summaries "
-                        f"use {props['period']}, the latest years with at least 20 sampling dates")
-                last_fecal = max((r["sample_date"][:10] for r in srows
-                                  if any(num(r.get(f)) is not None for f in FIELDS["fecal"])), default=None)
-                if last_fecal and last_fecal[:4] < str(years[-1]):
-                    note += f". Last fecal coliform result: {last_fecal}"
-                props["note"] = note
+                props["note"] = (f"Fecal coliform sampled on fewer than 20 dates in {', '.join(map(str, thin))}, "
+                                 f"so the summaries use {props['period']}, the latest years with at least "
+                                 f"20 sampling dates. Last fecal coliform result: {max(fecal_dates)}")
         feats.append(feature(pt, props))
         print(st, props["period"], props["n_samples"], fgm and round(fgm), egm and round(egm),
               props["do_mean_mg_l"], props["pct_do_below_standard"], props["pct_do_below_4_8"],

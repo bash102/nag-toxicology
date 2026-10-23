@@ -111,8 +111,8 @@ app.interaction = (function(d, w, $) {
             toggleOpen('menu-open', $('#menu-toggle'), false);
         });
 
-        // show the legend when a data-layer's legend is added
-        $(d).on('legend:rendered', function() {
+        // show the legend when a data-layer is turned on
+        $(d).on('layer:shown', function() {
             if (smallScreen.matches) toggleOpen('legend-open', $('#legend-toggle'), true);
         });
     }

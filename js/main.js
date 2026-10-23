@@ -401,7 +401,6 @@ app.map = (function(w, d, $, H) {
         data.id = id;
 
         $('#map-legend-container').append(hb_template(data));
-        $(d).trigger('legend:rendered', id);
     }
 
     // removes the data-layer's legend
@@ -417,6 +416,7 @@ app.map = (function(w, d, $, H) {
     $('.data-layer').click(function() {
         var layer = $(this).attr('id');
         hideShow(layer);
+        if ($(this).hasClass('active')) $(d).trigger('layer:shown', layer);
     });
 
     // switch the measure shown by layers with a measure picker, eg: health conditions
@@ -426,6 +426,8 @@ app.map = (function(w, d, $, H) {
 
         app.state[id] = $(this).val();
         sublayers[index].restyle();
+        // an open popup would still show the previous measure's fields
+        map_object.closePopup();
 
         if ($('#legend-' + id).length) {
             removeLegend(id);

@@ -52,7 +52,8 @@ def xlsx_rows(source):
     wb = (CalamineWorkbook.from_filelike(io.BytesIO(source)) if isinstance(source, bytes)
           else CalamineWorkbook.from_path(source))
     for r in wb.get_sheet_by_index(0).iter_rows():
-        yield tuple(r)
+        # calamine reads empty cells as "", openpyxl as None
+        yield tuple(None if v == "" else v for v in r)
 
 
 def xlsx_dicts(source):

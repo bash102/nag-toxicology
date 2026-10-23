@@ -151,7 +151,7 @@ def national_tracts(cd1_ids):
     if os.path.exists(cache):
         with open(cache) as f:
             d = json.load(f)
-        if d.get("regions") == REGIONS and set(d["cd1_detail"]) <= cd1_ids:
+        if d.get("regions") == REGIONS and set(d["cd1_detail"]) == cd1_ids:
             return d
     tracts = {}       # geoid -> [pop, sum(pop*risk), n_blocks]
     detail = {}       # CD1 geoid -> {col: sum(pop*risk)}
@@ -298,13 +298,13 @@ def cd1_resp_hi(cd1_ids, rfcs):
     i_blk, i_pop = ix["Block"], ix["Population"]
     # match exposure-concentration columns to the respiratory pollutants
     by_norm = {norm(h): h for h in header}
-    use = {}
-    for nm, rfc in rfcs.items():
+    use, missing = {}, []
+    for nm, rfc in sorted(rfcs.items()):
         h = by_norm.get(norm(nm))
         if h is None:
-            continue
-        use[h] = rfc
-    missing = sorted(set(rfcs) - {k for k in rfcs if norm(k) in by_norm})
+            missing.append(nm)
+        else:
+            use[h] = rfc
     acc = {}
     for r in rows:
         if r[i_blk] in (None, "") or not str(r[i_blk]).startswith("36047"):

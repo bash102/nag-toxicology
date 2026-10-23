@@ -177,6 +177,15 @@ app.legends = (function(){
       };
     },
 
+    air_toxics_risk : {
+      title : "Cancer Risk from Air Toxics",
+      subtitle : "Estimated lifetime cases per million people, 2020 (EPA model)",
+      type : 'polygon',
+      items : app.styles.breakLabels(app.styles.airToxicsBreaks, '').map(function(label, i) {
+        return { color : app.styles.airToxicsColors[i], label : label };
+      }).concat({ color : "#ffffff", label : "No residents" })
+    },
+
     lead_service_lines : {
       title : "Lead Water Service Lines",
       subtitle : "% of lots with lead or galvanized lines needing replacement, 2026",

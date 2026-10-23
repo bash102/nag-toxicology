@@ -85,6 +85,23 @@ app.layers = (function(){
           interactivity: "label, period",
           fieldLabels: { label: "Annual average NO2" }
       }, {
+          name: 'air_toxics_risk',
+          choropleth: true,
+          url: 'data/air_toxics_risk.geojson',
+          style: styles.airToxicsRisk,
+          interactivity: "nta_name, cancer_risk_per_million, cancer_risk_pctile_national, cancer_risk_pctile_state, top_cancer_pollutants, top_cancer_sources, top_cancer_source_types, respiratory_hi, top_respiratory_pollutants",
+          fieldLabels: {
+            nta_name: "Neighborhood",
+            cancer_risk_per_million: "Lifetime cancer risk, cases per million people",
+            cancer_risk_pctile_national: "National percentile (100 = highest risk)",
+            cancer_risk_pctile_state: "New York State percentile",
+            top_cancer_pollutants: "Main pollutants (risk per million)",
+            top_cancer_sources: "Main sources (risk per million)",
+            top_cancer_source_types: "Main source types (risk per million)",
+            respiratory_hi: "Respiratory hazard index (1 or more = concern)",
+            top_respiratory_pollutants: "Main respiratory irritants"
+          }
+      }, {
           name: 'lead_service_lines',
           choropleth: true,
           url: 'data/lead_service_lines.geojson',

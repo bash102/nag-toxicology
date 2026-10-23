@@ -289,7 +289,24 @@ app.styles = (function(){
     };
   }
 
+  // EPA AirToxScreen modeled lifetime cancer risk from air toxics, per million people
+  var airToxicsColors = ['#feedde', '#fdbe85', '#fd8d3c', '#e6550d', '#a63603'],
+      airToxicsBreaks = [35, 36, 37, 39];
+
+  function airToxicsRisk(feature) {
+    return {
+      fillColor: breakColor(feature.properties.cancer_risk_per_million, airToxicsBreaks, airToxicsColors, '#ffffff'),
+      fillOpacity: 0.7,
+      color: '#666666',
+      weight: 0.5,
+      opacity: 0.5
+    };
+  }
+
   return {
+    airToxicsColors: airToxicsColors,
+    airToxicsBreaks: airToxicsBreaks,
+    airToxicsRisk: airToxicsRisk,
     selectedMeasure: selectedMeasure,
     layerMeasures: {
       health_conditions: healthMeasures,

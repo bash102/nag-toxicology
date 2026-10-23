@@ -709,3 +709,160 @@ Interpretation caveats, from DOH:
   they do not account for age structure.
 - Registry data are continuously updated, so these provisional counts may differ from other
   NYSCR publications.
+
+## air_toxics_risk.geojson — `scripts/build_air_toxics_risk.py`
+
+| | |
+|---|---|
+| Source | U.S. EPA **Air Toxics Screening Assessment (AirToxScreen), 2020 assessment**, the newest year with risk results (`https://www.epa.gov/AirToxScreen`, results page `https://www.epa.gov/AirToxScreen/2020-airtoxscreen-assessment-results`; data files on `https://gaftp.epa.gov/rtrmodeling_public/AirToxScreen/2020/`, files dated 2024-05 to 2025-04). |
+| Newer years | None with risk. The AirToxScreen home page (updated 2026-09-15) has a "2021 Data Available" note, but it links to the *2021 Multipollutant Platform* (`https://gaftp.epa.gov/Air/Multipollutant_Platform/2021/`), which has emissions and block-level ambient/exposure **concentrations** only. It has no cancer risk or hazard index. |
+| Cancer risk | Block-level cancer risk by source group, all 13 regional files: `Cancer/BySource/Region{1,2,3,4a,4b,5a,5b,6a,6b,7,8,9,10}_CancerRisk_by_block_srcgrp.xlsx` (1.6 GB). Block-level cancer risk by pollutant for EPA Region 2: `Cancer/ByPollutant/Region2_CancerRisk_by_block_poll.xlsx`. |
+| Respiratory hazard | `Exposure Concentrations/Region2_2020ATS_Exposure_Concentrations.xlsx` (block-level exposure concentrations, µg/m³, 177 air toxics), plus EPA's RfCs and target-organ flags from `2020AirToxScreenPollutants.xlsx` in the 2020 supplemental data zip (`https://www.epa.gov/system/files/other-files/2024-06/2020-airtoxscreen-supplemental-data-files.zip`). |
+| Retrieved | 2026-10-22. |
+| Check | EPA county averages, `https://www.epa.gov/system/files/documents/2025-01/national_cancerrisk_by_county_srcgrp.xlsx`. |
+| Methods | *AirToxScreen 2020 Documentation* (TSD), `https://www.epa.gov/system/files/documents/2024-05/airtoxscreen_2020-tsd.pdf`; AirToxScreen Limitations and Frequent Questions pages. |
+| Geometry | Reused from `data/acs.geojson` (NYC DCP 2020 census tracts, clipped to shoreline). |
+
+**Tract vintage.** AirToxScreen 2017–2019 (and NATA) reported 2010 census tracts. The 2020
+assessment is the first to report **2020 census blocks** instead. The TSD says risks "have
+previously been generated at the census tract level, but for the 2020 version of
+AirToxScreen, have been generated at the census block level". The block IDs are 2020
+blocks: Kings County's 8,015 populated blocks sum to 2,736,074 people, the Census 2020
+count. 2020 blocks nest inside 2020 tracts, so no 2010 geometry or crosswalk is needed.
+EPA publishes no tract file for 2020, so the blocks are aggregated to tracts here.
+
+Processing:
+- **Aggregation.** Tract value = population-weighted mean of its blocks (block value ×
+  block population, summed, ÷ tract population). This is the method EPA uses for its own
+  county and state averages (TSD §6.4.1). Check: aggregating Kings County's blocks the
+  same way gives 34.74 per million, which matches the unrounded sum of EPA's published
+  Kings County source columns to 10 decimals. EPA's files list only populated blocks.
+- `cancer_risk_per_million`: total lifetime cancer risk per million from **all modeled
+  sources**, as EPA defines "Total Cancer Risk". This is the sum of all 39 source types:
+  point, on-road, nonroad, nonpoint, fires, biogenics, **secondary formation** and
+  **background**. It equals the sum over the 72 carcinogens in the pollutant file (they
+  agree to 1e-14). It does **not** include diesel PM (EPA has no cancer URE for diesel).
+  EPA's own "Total Cancer Risk" column is rounded to one significant figure (every CD1
+  block reads 30 or 40), so the unrounded sum of the source columns is used instead, and
+  the tract mean is given to one decimal. Rounding the sum reproduces EPA's published
+  total in every block except 11 of the 5.8 million nationally (in Louisiana, Texas and
+  Washington). None of those is in New York. That decimal shows relative position only. It
+  is far finer than EPA's stated precision (see caveats).
+- `cancer_risk_pctile_national`, `cancer_risk_pctile_state`: EPA does not publish
+  percentiles. They are computed here from the full national block files, aggregated to
+  tracts in the same way. A value is the share of populated tracts with a lower tract value
+  (ties count half), × 100, rounded. "National" = the 83,845 populated tracts in the 50
+  states + DC (Puerto Rico and the Virgin Islands left out). "State" = the 5,358 populated
+  New York tracts. These are tract-count percentiles, not population percentiles.
+- `respiratory_hi`: total chronic **respiratory hazard index**. EPA computes it ("For
+  noncancer effects in the 2020 assessment, we estimated the effect of air toxics on the
+  respiratory target system only"), but it has **not published 2020 HI values** as files or
+  in the 2020 mapping tool service (`Cancer_Risk_2020` FeatureServer has cancer fields
+  only). It is therefore **computed here** with EPA's documented formula (TSD §6.3):
+  HI = Σ HQ, HQ = exposure concentration ÷ RfC. The sum runs over the 42 air toxics that
+  EPA's pollutant table flags `resp` and gives an RfC: acrolein, formaldehyde,
+  acetaldehyde, diesel PM, naphthalene, chlorine, nickel, chromium VI and others. Each
+  block's HI is computed, then the tract takes the population-weighted mean. The inputs and
+  units are checked: exposure concentration × EPA's URE reproduces EPA's published
+  pollutant cancer risks in every CD1 tract, for formaldehyde, acetaldehyde, chromium VI,
+  nickel, naphthalene, 1,4-dichlorobenzene, acrylonitrile and epichlorohydrin (ratio
+  1.000000). For comparison, EPA's published 2019 AirToxScreen respiratory HI for
+  Brooklyn's 2010 tracts is mostly 0.5, with some 0.4 (rounded to one significant figure;
+  EPA ArcGIS service `NATA2019_RespHI_with_Pollutants_SourceGroups`). That is in line with
+  the 0.43–0.54 computed here. Two decimals.
+- `top_cancer_pollutants`: the 3 pollutants with the highest tract cancer risk, with risk
+  per million (one decimal), e.g. "Formaldehyde 19.4, Carbon tetrachloride 3.0, Benzene 2.7".
+  Items are separated by ", " (comma and space). Commas inside chemical names such as
+  "1,3-Butadiene" have no space after them. Source labels contain no commas.
+- `top_cancer_sources`: the 3 largest of 8 broad source groups (EPA's column prefixes):
+  Point sources (PT), On-road mobile (OR), Nonroad mobile (NR, which includes commercial
+  marine vessels, locomotives, airports and railyards), Nonpoint (NP), Fires, Biogenics,
+  Secondary formation, Background.
+- `top_cancer_source_types`: the 3 largest of EPA's 37 detailed source types, leaving out
+  secondary formation and background. Those two are almost the same across CD1, so the
+  broad top-3 is identical in every tract. Labels shorten the mapping tool's names.
+- `cancer_risk_by_source_group`: all 8 broad groups (two decimals).
+- `top_respiratory_pollutants`: the 3 largest hazard quotients.
+- Also `tract_label`, `nta_name` (from `acs.geojson`), `population_2020` (sum of EPA's
+  block populations, Census 2020), `n_blocks`, `no_population`, `assessment_year` (2020),
+  `tract_vintage` (2020). The FeatureCollection `metadata` holds the context medians.
+- Two tracts have no populated blocks in EPA's files and are null with
+  `no_population: true`: 36047057902 and 36047058902. 36047044902 has 44 people in Census
+  2020 (6 blocks), so it gets a value, although the ACS gives it 0 population.
+- The national tract table is cached as `airtoxscreen2020_tract_totals.json` in
+  `$NAG_CACHE`. A cold run downloads about 2.5 GB of workbooks. With python-calamine
+  installed (`pip install python-calamine`) it reads them in about 9 minutes; openpyxl is
+  used as a fallback but is about 7× slower.
+
+Result of the 2026-10-22 run (52 tracts with values):
+- `cancer_risk_per_million` **33.7–40.5** (median 35.9). The highest values are in
+  Greenpoint (36047056500 and 36047057300 at 40.5). The lowest is 36047044902 (33.7),
+  in the East Williamsburg industrial area.
+- `respiratory_hi` **0.43–0.54**. Every tract is well below 1.
+- National percentile 74–94, state percentile 71–99.
+- Top pollutants in all 52 tracts: formaldehyde (19.0–21.5 per million), then carbon
+  tetrachloride (3.0, the same everywhere; it is a long-lived global pollutant that is
+  almost entirely background) and benzene. They come in the order formaldehyde, carbon
+  tetrachloride, benzene in 32 tracts and formaldehyde, benzene, carbon tetrachloride in 20.
+- Top source groups in all 52 tracts: secondary formation (15.4–15.8), nonpoint
+  (6.2–8.6), nonroad mobile (4.7–6.8). On-road mobile is 2.5–4.4, background 3.0 and point
+  sources 0.8–1.4. Top detailed types: solvents and coatings, commercial cooking, then
+  either on-road light-duty gas off-network (42 tracts) or nonroad commercial equipment
+  (10).
+- Top respiratory HQs in all tracts: formaldehyde, acetaldehyde, acrolein. Diesel PM is
+  fourth in every tract (HQ 0.05–0.08).
+- Context (tract-level, same method): US median **29.2**, New York State median 28.3,
+  **NYC median 35.2** (2,292 tracts). Population-weighted means: US 30.1 (EPA: "the
+  national average risk from air toxics exposure in 2020 was 30-in-1 million"), Kings
+  County 34.7 (EPA publishes it rounded as 30).
+- Suggested 5-class breaks:
+  - `cancer_risk_per_million`: 33 / 35 / 36 / 37 / 39 / 41 (classes hold 1, 26, 14, 3
+    and 8 tracts).
+  - `respiratory_hi`: 0.40 / 0.45 / 0.47 / 0.49 / 0.51 / 0.55 (1, 17, 21, 4 and 9
+    tracts).
+  These separate small differences. The whole CD1 range of cancer risk is less than one
+  of EPA's rounding steps, so present the classes as relative levels within CD1, not as
+  meaningful health differences.
+
+Caveats (EPA's wording in quotes):
+- **Screening tool.** "EPA developed AirToxScreen as a screening tool for State, Local and
+  Tribal air agencies. AirToxScreen's results help these agencies identify which
+  pollutants, emission sources and places they may wish to study further." "Often, more
+  localized studies are needed to better characterize local-level risk." Results "should
+  not be used … as a definitive means to pinpoint specific risk values within a census
+  tract or census block" or "to characterize or compare risks at local levels (such as
+  between neighborhoods)" (TSD §1.6). Comparing CD1 tracts with each other is exactly this
+  kind of local comparison, so treat the map as a pattern, not a ranking.
+- **Lifetime, continuous, modeled.** Risks are "lifetime risks, meaning the risk of
+  developing cancer due to inhalation exposure to each air toxic compound over a normal
+  lifetime of 70 years". AirToxScreen "assume[s] a person breathes the air toxics emitted
+  in the analysis every day for 70 years" at 2020 emission levels. Concentrations are
+  "based on computer model simulations, not direct measurements". "A lifetime cancer risk
+  of 1-in-1 million means that, for every 1 million people who are continuously exposed to
+  a certain level of a pollutant over 70 years, one person may develop cancer. These risks
+  are on top of any other cancer risks from other sources."
+- **Not individual risk.** Results "are meant to represent an average across an area (i.e.,
+  a census block) and are not meant to represent risks to an individual person or specific
+  place". "AirToxScreen isn't designed to predict actual risks at a specific place."
+- **Diesel PM excluded from cancer risk.** "The assessment does not quantify cancer risk
+  from diesel PM, although EPA has concluded that the general population is exposed to
+  levels close to or overlapping with levels that have been linked to increased cancer
+  risk in epidemiology studies." Diesel PM is in the respiratory HI only. This matters near
+  the BQE, truck routes and the waterfront.
+- **Precision.** EPA says: "we round all calculated risks from 25-in-1 million through
+  34 in-1-million to 30-in-1 million" because more digits would be "false precision". By
+  EPA's convention every CD1 tract is "30" or "40" in a million. The decimals here come
+  from aggregating EPA's unrounded components and show relative position only.
+- **Hazard index.** "A hazard index (HI) of 1 or lower means air toxics are unlikely to
+  cause adverse noncancer health effects over a lifetime of exposure." An HI above 1
+  "cannot be interpreted as a statistical probability of adverse effects occurring". The
+  2020 HI here is a reconstruction from EPA's published inputs, not an EPA-published value.
+- **Scope.** Inhalation only; outdoor-released air toxics only (no indoor sources); US
+  sources only; no criteria pollutants (PM2.5, NO2, ozone; see `air_pm25` / `air_no2`);
+  only the air toxics with dose-response values. Background concentrations are regional
+  averages. Episodic releases may be missed. The 2020 inventory reflects pandemic-year
+  activity. EPA's "Risk Changes" caveat layer (`Cancer_Risk_2020_Caveats`) flags no blocks
+  in New York City.
+- Most of the total comes from pollutants that are uniform at this scale (secondary
+  formaldehyde/acetaldehyde, background, carbon tetrachloride). Differences between CD1
+  tracts come mostly from nonpoint, nonroad and on-road sources.
